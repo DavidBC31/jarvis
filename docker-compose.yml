@@ -1,5 +1,9 @@
 # Lancement de Jarvis en une commande :  docker compose up --build
 # Puis ouvrir http://localhost:8000  (admin : http://localhost:8000/#admin)
+#
+# Exposition publique (Mac Studio) via Cloudflare Tunnel :
+#   docker compose --profile tunnel up -d --build
+# (nécessite TUNNEL_TOKEN dans .env — voir .env.example et le README)
 services:
   jarvis:
     build: .
@@ -19,3 +23,15 @@ services:
       # … ou via une page de statut publique :
       UPTIME_KUMA_STATUS_SLUG: ${UPTIME_KUMA_STATUS_SLUG:-}
     restart: unless-stopped
+
+  # Tunnel Cloudflare — n'est lancé qu'avec le profil "tunnel".
+  # Dans le dashboard Cloudflare Zero Trust, route ton hostname public vers
+  # le service  http://jarvis:8000  (ce conteneur le joint par le réseau Compose).
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    command: tunnel --no-autoupdate run --token ${TUNNEL_TOKEN:-}
+    restart: unless-stopped
+    depends_on:
+      - jarvis
+    profiles:
+      - tunnel

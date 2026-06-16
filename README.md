@@ -44,6 +44,41 @@ docker compose up --build
 ➡️ Ouvre **http://localhost:8000** · admin sur **http://localhost:8000/#admin**
 (Ctrl+C pour arrêter). Aucune dépendance Python/Node à gérer.
 
+#### Secrets (clés API, tokens)
+
+Copie `.env.example` en `.env` et remplis ce dont tu as besoin (tout est optionnel) :
+
+```bash
+cp .env.example .env   # puis édite .env
+```
+
+Docker Compose charge `.env` automatiquement. Le fichier `.env` n'est **jamais** committé.
+
+### Héberger sur le Mac Studio et exposer via Cloudflare Tunnel
+
+Le Mac Studio fait tourner Jarvis en permanence ; **Cloudflare Tunnel** lui donne une URL HTTPS publique **sans ouvrir de port** sur la box.
+
+1. **Installer** Docker Desktop et `cloudflared` :
+   ```bash
+   brew install cloudflared
+   ```
+2. **Créer un tunnel** dans Cloudflare → **Zero Trust → Networks → Tunnels → Create a tunnel** (type « Cloudflared »). Copie le **token** affiché (chaîne longue après `--token`).
+3. **Router un hostname public** : dans l'onglet *Public Hostname* du tunnel, ajoute par ex. `jarvis.bleucitron.xyz` → **Service : `HTTP`** → URL **`http://jarvis:8000`** (le conteneur `cloudflared` joint l'app par le réseau Docker).
+4. **Renseigner le token** dans `.env` :
+   ```bash
+   TUNNEL_TOKEN=eyJ...        # le token du tunnel
+   # + tes autres secrets (UPTIME_KUMA_API_KEY, etc.)
+   ```
+5. **Lancer app + tunnel** (en arrière-plan, redémarrage auto) :
+   ```bash
+   docker compose --profile tunnel up -d --build
+   ```
+   ➡️ Le dashboard est accessible sur ton hostname public. Logs : `docker compose logs -f`. Arrêt : `docker compose --profile tunnel down`.
+
+🔒 **Important — le dashboard expose des infos internes** (tickets, supervision). Protège l'URL publique avec **Cloudflare Access** (Zero Trust → Access → Applications) en la restreignant à vos comptes Google `@bleucitron.net`. Sinon, n'importe qui avec l'URL y accède.
+
+> Pour un test rapide sans compte/hostname : `cloudflared tunnel --url http://localhost:8000` fournit une URL `*.trycloudflare.com` éphémère (l'app doit déjà tourner via `docker compose up`).
+
 ### Option 2 — Script natif
 
 **En une commande** (build le frontend si Node est présent, puis démarre l'agrégateur) :

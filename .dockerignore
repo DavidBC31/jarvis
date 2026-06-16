@@ -4,3 +4,6 @@
 **/dist
 .git
 *.log
+.env
+.env.*
+!.env.example
