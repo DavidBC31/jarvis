@@ -7,6 +7,7 @@ import { ProjectsPanel } from "./components/panels/ProjectsPanel";
 import { ServicesPanel } from "./components/panels/ServicesPanel";
 import { JarvisPanel } from "./components/panels/JarvisPanel";
 import { AdminProjects } from "./components/admin/AdminProjects";
+import { MonitoringPage } from "./components/MonitoringPage";
 
 // Routage minimal par hash : "#admin" → admin, sinon dashboard.
 function useHashRoute() {
@@ -25,6 +26,9 @@ export function App() {
 
   if (route === "admin") {
     return <AdminProjects />;
+  }
+  if (route === "monitoring") {
+    return <MonitoringPage />;
   }
 
   return (

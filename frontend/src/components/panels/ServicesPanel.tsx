@@ -1,104 +1,95 @@
 import { Panel } from "../Panel";
 import { useDashboard } from "../../store";
-import type { ServiceNode, ServiceState } from "../../types";
-
-const STATE_COLOR: Record<ServiceState, string> = {
-  ok: "var(--status-ok)",
-  warn: "var(--status-warn)",
-  alert: "var(--status-alert)",
-  maint: "#ff9a3a",
-};
-const STATE_LABEL: Record<ServiceState, string> = {
-  ok: "Opérationnel",
-  warn: "Dégradé",
-  alert: "Hors ligne",
-  maint: "Maintenance",
-};
-
-const BEATS_SHOWN = 30;
+import { STATE_COLOR, STATE_LABEL } from "../monitoring/ServiceList";
+import type { ServiceNode } from "../../types";
 
 export function ServicesPanel() {
   const panel = useDashboard((s) => s.state?.services);
-  const up = panel?.upCount ?? 0;
-  const total = panel?.total ?? panel?.nodes.length ?? 0;
-  const allUp = total > 0 && up === total;
+  const nodes = panel?.nodes ?? [];
+  const total = panel?.total ?? nodes.length;
+  const up = panel?.upCount ?? nodes.filter((n) => n.state === "ok").length;
+
+  const off = nodes.filter((n) => n.state === "alert");
+  const degraded = nodes.filter((n) => n.state === "warn");
+  const maint = nodes.filter((n) => n.state === "maint");
+
+  // Code couleur : rouge si ≥1 service off, orange si dégradé, vert sinon.
+  const accent = off.length
+    ? "var(--status-alert)"
+    : degraded.length
+      ? "var(--status-warn)"
+      : "var(--status-ok)";
+
+  const headline = off.length
+    ? `${off.length} SERVICE${off.length > 1 ? "S" : ""} HORS LIGNE`
+    : degraded.length
+      ? `${degraded.length} SERVICE${degraded.length > 1 ? "S" : ""} DÉGRADÉ${degraded.length > 1 ? "S" : ""}`
+      : "TOUT EST OPÉRATIONNEL";
 
   return (
-    <Panel title="ÉTAT DES SERVICES" subtitle="SUPERVISION TEMPS RÉEL" stale={panel?.stale}>
+    <Panel
+      title="SUPERVISION"
+      subtitle="ÉTAT GLOBAL"
+      stale={panel?.stale}
+      accent={off.length ? accent : undefined}
+    >
       {!panel ? (
         <div className="text-text-muted text-xs">Chargement…</div>
+      ) : total === 0 ? (
+        <div className="text-text-muted text-xs">Supervision en attente de données…</div>
       ) : (
         <div className="h-full flex flex-col">
-          <div className="flex items-center gap-2 text-[11px] mb-2 shrink-0">
+          <div className="flex items-center gap-3">
             <span
-              className="w-2 h-2 rounded-full"
+              className="w-4 h-4 rounded-full shrink-0"
               style={{
-                background: allUp ? "var(--status-ok)" : "var(--status-alert)",
-                boxShadow: `0 0 6px ${allUp ? "var(--status-ok)" : "var(--status-alert)"}`,
+                background: accent,
+                boxShadow: `0 0 12px ${accent}`,
+                animation: off.length ? "pulse-glow 1.2s ease-in-out infinite" : undefined,
               }}
             />
-            <span className="font-display tracking-widest">
-              {allUp ? "TOUS LES SERVICES OPÉRATIONNELS" : "INCIDENT EN COURS"}
-            </span>
-            <span className="ml-auto text-text-muted tabular-nums">
-              {up}/{total} en ligne
-            </span>
+            <div className="min-w-0">
+              <div className="font-display tracking-widest text-lg" style={{ color: accent }}>
+                {headline}
+              </div>
+              <div className="text-[11px] text-text-muted tabular-nums">
+                {up}/{total} services en ligne
+                {maint.length ? ` · ${maint.length} en maintenance` : ""}
+              </div>
+            </div>
           </div>
 
-          <ul className="flex-1 min-h-0 overflow-auto divide-y divide-white/5 pr-1">
-            {panel.nodes.map((n) => (
-              <ServiceRow key={n.id} node={n} />
-            ))}
-          </ul>
+          {/* Services qui ressortent : off (rouge) puis dégradés (orange). */}
+          {(off.length > 0 || degraded.length > 0) && (
+            <div className="mt-3 flex-1 min-h-0 overflow-auto flex flex-wrap gap-2 content-start">
+              {[...off, ...degraded].map((n) => (
+                <Chip key={n.id} node={n} />
+              ))}
+            </div>
+          )}
+
+          <a
+            href="#monitoring"
+            className="mt-auto self-end text-[11px] tracking-widest pt-2"
+            style={{ color: "var(--neon-cyan)" }}
+          >
+            VOIR LE DÉTAIL →
+          </a>
         </div>
       )}
     </Panel>
   );
 }
 
-function ServiceRow({ node }: { node: ServiceNode }) {
+function Chip({ node }: { node: ServiceNode }) {
   const color = STATE_COLOR[node.state];
-  const beats = node.beats ?? [];
-  // Aligne les barres à droite (les plus récentes à droite), comble à gauche.
-  const padded: (ServiceState | null)[] = [
-    ...Array(Math.max(0, BEATS_SHOWN - beats.length)).fill(null),
-    ...beats.slice(-BEATS_SHOWN),
-  ];
-
   return (
-    <li className="flex items-center gap-3 py-1.5">
-      <span
-        className="w-2.5 h-2.5 rounded-full shrink-0"
-        style={{
-          background: color,
-          boxShadow: `0 0 6px ${color}`,
-          animation: node.state !== "ok" ? "pulse-glow 1.4s ease-in-out infinite" : undefined,
-        }}
-      />
-      <div className="min-w-0 w-40 shrink-0">
-        <div className="truncate">{node.label}</div>
-        <div className="text-[10px] truncate" style={{ color }}>
-          {STATE_LABEL[node.state]}
-          {node.detail ? ` · ${node.detail}` : ""}
-        </div>
-      </div>
-
-      <div className="flex-1 min-w-0 flex items-end justify-end gap-[2px] h-5">
-        {padded.map((b, i) => (
-          <span
-            key={i}
-            className="w-[3px] rounded-sm"
-            style={{
-              height: b ? "100%" : "40%",
-              background: b ? STATE_COLOR[b] : "rgba(255,255,255,0.10)",
-            }}
-          />
-        ))}
-      </div>
-
-      <span className="tabular-nums text-text-muted w-14 text-right shrink-0">
-        {node.uptimePercent != null ? `${node.uptimePercent}%` : "—"}
-      </span>
-    </li>
+    <span
+      className="px-2 py-1 rounded text-[11px] whitespace-nowrap max-w-full truncate"
+      style={{ background: `${color}1a`, border: `1px solid ${color}`, color }}
+      title={node.detail ? `${node.label} — ${node.detail}` : node.label}
+    >
+      ● {node.label} · {STATE_LABEL[node.state]}
+    </span>
   );
 }

@@ -90,7 +90,7 @@ En production, `npm run build` génère `frontend/dist`, servi directement par l
 - ✅ **Monitoring (P3)** : deux sources possibles —
   1. **Uptime Kuma** (recommandé) : récupère **tous les monitors** d'une page de statut existante (pastille, heartbeats, % uptime, regroupements) ;
   2. **sondes locales** (`http`/`tcp`/`self`/`manual`) via `backend/data/monitoring.json` si Uptime Kuma n'est pas configuré.
-  Affichage en liste type Uptime Kuma. Métriques système du footer (CPU/RAM, température) **réelles** via `psutil`.
+  Sur le **tableau de bord** : un module **synthèse** (vert « Tout est opérationnel », ou **rouge** dès qu'un service est hors ligne, avec la liste des services concernés). Page **dédiée** `#monitoring` : liste complète type Uptime Kuma (pastille, heartbeats, uptime). Métriques système du footer (CPU/RAM, température) **réelles** via `psutil`.
 - ✅ **Tickets Everping (P1)** : pas d'API publique → on rejoue l'**API GraphQL privée** de la plateforme (`appv2.everping.eu`), authentifiée par **Firebase**. Avec un **refresh token** Firebase (capturé une fois), le serveur régénère seul les ID tokens et récupère les tickets en continu. Sans credentials, un **échantillon anonymisé** est servi (mode démo). Normalisation vers le contrat `Ticket`, tickets ouverts en tête.
 - ⏳ À venir : amélioration du RAG (embeddings + re-ranking). Trello (P2) possible en complément du mode manuel.
 

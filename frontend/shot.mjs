@@ -20,6 +20,10 @@ await page.getByRole("button", { name: "ENVOYER" }).click();
 await page.waitForTimeout(2500); // laisse les rag.event diffuser la réponse
 await page.screenshot({ path: "/tmp/dashboard_rag.png" });
 
+await page.goto(`${BASE}/#monitoring`, { waitUntil: "networkidle" });
+await page.waitForTimeout(600);
+await page.screenshot({ path: "/tmp/monitoring.png" });
+
 await page.goto(`${BASE}/#admin`, { waitUntil: "networkidle" });
 await page.waitForTimeout(600);
 await page.screenshot({ path: "/tmp/admin.png" });
