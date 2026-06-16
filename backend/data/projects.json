@@ -1,0 +1,8 @@
+{
+  "projects": [
+    { "id": "PRJ-01", "name": "Refonte intranet", "dueDate": "2026-07-15", "keyStatus": "on_track", "progress": 65 },
+    { "id": "PRJ-02", "name": "Déploiement SSO", "dueDate": "2026-06-30", "keyStatus": "at_risk", "progress": 40 },
+    { "id": "PRJ-03", "name": "Sauvegarde hors-site", "dueDate": "2026-06-20", "keyStatus": "critical", "progress": 90 },
+    { "id": "PRJ-04", "name": "Renouvellement parc PC", "dueDate": "2026-09-01", "keyStatus": "on_track", "progress": 25 }
+  ]
+}

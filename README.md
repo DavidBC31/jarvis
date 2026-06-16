@@ -57,7 +57,21 @@ En production, `npm run build` génère `frontend/dist`, servi directement par l
 
 - ✅ Agrégateur FastAPI : `/api/health`, `/api/snapshot`, hub WebSocket `/ws` (snapshot d'amorçage + diffusion périodique).
 - ✅ SPA : header + logo animé, grille 16:9, 4 panneaux câblés au store (Zustand) via WebSocket avec reconnexion exponentielle, footer (horloge live, uptime, santé Mac Studio, activity stream).
-- ⏳ Données encore **simulées** côté serveur — les connecteurs réels (Everping, Jira/Trello, Nagios/Zabbix) et le service RAG (panneau 4) sont les briques suivantes.
+- ✅ **Panneau Projets (P2) — source gérée à la main** : fichier `backend/data/projects.json` (édition directe ou via `GET`/`PUT /api/projects`), validé, normalisé, surveillé (watcher → `panel.update` temps réel).
+- ⏳ Données des autres panneaux encore **simulées** — connecteurs Everping (P1), Monitoring (P3), service RAG (P4) à venir. Trello (P2) possible en complément du mode manuel.
+
+### Gérer les projets (P2) à la main
+
+Éditer directement `backend/data/projects.json` (le watcher pousse la mise à jour à l'écran),
+ou via l'API :
+
+```bash
+curl -X PUT http://localhost:8000/api/projects \
+  -H 'Content-Type: application/json' \
+  -d '{"projects":[{"id":"PRJ-01","name":"Refonte intranet","dueDate":"2026-07-15","keyStatus":"on_track","progress":65}]}'
+```
+
+`overdue` est calculé automatiquement ; tri par priorité (`critical` > `at_risk` > `on_track`) puis échéance.
 
 ## Stack retenue (résumé)
 

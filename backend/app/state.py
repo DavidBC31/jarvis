@@ -10,6 +10,8 @@ from __future__ import annotations
 import random
 from datetime import datetime, timezone
 
+from .connectors import projects as projects_conn
+
 SCHEMA_VERSION = 1
 
 
@@ -52,17 +54,8 @@ def seed_tickets() -> dict:
 
 
 def seed_projects() -> dict:
-    projects = [
-        {"id": "PRJ-01", "name": "Refonte intranet", "dueDate": "2026-07-15",
-         "keyStatus": "on_track", "progress": 65, "overdue": False},
-        {"id": "PRJ-02", "name": "Déploiement SSO", "dueDate": "2026-06-30",
-         "keyStatus": "at_risk", "progress": 40, "overdue": False},
-        {"id": "PRJ-03", "name": "Sauvegarde hors-site", "dueDate": "2026-06-20",
-         "keyStatus": "critical", "progress": 90, "overdue": False},
-        {"id": "PRJ-04", "name": "Renouvellement parc PC", "dueDate": "2026-09-01",
-         "keyStatus": "on_track", "progress": 25, "overdue": False},
-    ]
-    return {**_meta(), "projects": projects}
+    # Panneau Projets (P2) : source gérée à la main via le connecteur.
+    return projects_conn.build_panel()
 
 
 def seed_services() -> dict:

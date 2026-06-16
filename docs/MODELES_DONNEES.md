@@ -189,6 +189,8 @@ Endpoints minimaux exposés par l'agrégateur (le temps réel passe ensuite par 
 | `GET`   | `/api/snapshot`       | État complet `DashboardState` (fallback si le WS n'est pas encore prêt). |
 | `GET`   | `/api/health`         | Santé de l'agrégateur et des connecteurs. |
 | `GET`   | `/ws`                 | Mise à niveau WebSocket (flux temps réel). |
+| `GET`   | `/api/projects`       | Liste éditable des projets (source gérée à la main) + panneau courant. |
+| `PUT`   | `/api/projects`       | Remplace la liste (corps `{ projects: ProjectInput[] }`), réécrit le fichier source, diffuse un `panel.update`. `422` si invalide. |
 | `POST`  | `/api/rag/voice`      | (interne) flux audio entrant du micro → service RAG. |
 | `POST`  | `/api/rag/reindex`    | (interne/admin) déclenche la ré-indexation de la base documentaire. |
 

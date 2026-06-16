@@ -179,14 +179,29 @@ interaction tactile/souris requise (mode kiosque) — tout est piloté par les d
 
 ### 4.2 Backend — connecteur Projets
 
-- **Source** : API/BDD interne IT — **Jira** (`/rest/api/3/search`) ou **Trello** (`/1/boards/{id}/cards`).
+Deux modes envisagés ; **le mode « géré à la main » est implémenté en premier**, le mode
+Trello pourra être ajouté ensuite sans changer le contrat exposé au frontend.
+
+**Mode A — Source gérée à la main (implémenté)**
+
+- **Source de vérité** : fichier JSON éditable `backend/data/projects.json`.
 - Module `connectors/projects.py` :
-  - Mapping du champ d'avancement :
-    - Jira : champ personnalisé « % done » ou ratio sous-tâches terminées / total.
-    - Trello : checklists complétées, ou label/champ custom.
-  - Mapping du `Key Status` depuis un label/champ Jira (`On Track` / `At Risk` / `Critical`).
-  - Polling ~2–5 min (les projets évoluent lentement).
-  - Normalisation vers le schéma `Project`.
+  - Forme éditée minimale par projet : `id`, `name`, `dueDate` (ISO), `keyStatus`
+    (`on_track` / `at_risk` / `critical`), `progress` (0–100). `overdue` est **calculé**
+    (échéance passée et `progress < 100`), jamais saisi à la main.
+  - Validation **Pydantic** robuste (le fichier étant édité à la main) : sur contenu
+    invalide, le panneau conserve le dernier état valide et passe `stale` + `sourceError`.
+  - Normalisation + tri : priorité (`critical` > `at_risk` > `on_track`) puis échéance.
+  - **Watcher** : surveillance du `mtime` (~2 s) → pousse un `panel.update` ciblé
+    dès modification manuelle du fichier.
+  - **API REST** : `GET /api/projects` (liste éditable + panneau courant),
+    `PUT /api/projects` (validation → réécriture du fichier → diffusion immédiate).
+
+**Mode B — Connecteur Trello (ultérieur)**
+
+- **Source** : API Trello (`/1/boards/{id}/cards`).
+- Mapping : avancement via checklists complétées ; `keyStatus` via label/champ custom.
+- Polling ~2–5 min. Même normalisation vers le schéma `Project` → contrat front inchangé.
 
 ---
 
