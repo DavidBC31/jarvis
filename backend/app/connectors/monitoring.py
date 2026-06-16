@@ -15,6 +15,7 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import json
+import os
 import time
 import urllib.error
 import urllib.request
@@ -28,6 +29,8 @@ VALID_STATES = {"ok", "warn", "alert", "maint"}
 _STATE_LABELS = {"maint": "Maintenance", "alert": "Hors ligne", "warn": "Dégradé"}
 # Nombre de heartbeats conservés par service (barre d'historique type Uptime Kuma).
 _HISTORY = 30
+# Statut Uptime Kuma -> état interne (0 down, 1 up, 2 pending, 3 maintenance).
+_KUMA_STATE = {0: "alert", 1: "ok", 2: "warn", 3: "maint"}
 
 _last_mtime: float | None = None
 _last_good_panel: dict | None = None
@@ -200,10 +203,101 @@ def _record_beat(node_id: str, state: str) -> tuple[list[str], float]:
     return beats, pct
 
 
-async def check_all() -> dict:
-    """Sonde tous les nœuds (en parallèle) et construit le panneau. En cas de
-    config illisible, conserve le dernier panneau valide et marque ``stale``."""
+# --- Source Uptime Kuma (page de statut publique) ---------------------------
+
+
+def _kuma_base() -> str | None:
+    base = os.getenv("UPTIME_KUMA_BASE_URL")
+    return base.rstrip("/") if base else None
+
+
+def _kuma_slug() -> str | None:
+    return os.getenv("UPTIME_KUMA_STATUS_SLUG")
+
+
+def kuma_configured() -> bool:
+    return bool(_kuma_base() and _kuma_slug())
+
+
+def _get_json(url: str) -> dict:
+    req = urllib.request.Request(url, headers={"Accept": "application/json"})
+    with urllib.request.urlopen(req, timeout=15) as resp:
+        return json.loads(resp.read())
+
+
+def normalize_kuma(status_page: dict, heartbeat: dict) -> dict:
+    """Transforme la page de statut Uptime Kuma en panneau Services interne.
+
+    Récupère TOUS les monitors (tous groupes), leur dernier état, la barre de
+    heartbeats récents et le % d'uptime sur 24 h."""
+    hb_list = heartbeat.get("heartbeatList") or {}
+    uptime = heartbeat.get("uptimeList") or {}
+    nodes = []
+    for group in status_page.get("publicGroupList") or []:
+        group_name = group.get("name") or ""
+        for m in group.get("monitorList") or []:
+            mid = str(m.get("id"))
+            beats_raw = hb_list.get(mid) or hb_list.get(m.get("id")) or []
+            beats = [_KUMA_STATE.get(b.get("status"), "warn") for b in beats_raw][-_HISTORY:]
+            state = beats[-1] if beats else "warn"
+            up = uptime.get(f"{mid}_24", uptime.get(f"{mid}_24h"))
+            if up is not None:
+                pct = round(float(up) * 100, 1)
+            else:
+                considered = [b for b in beats if b != "maint"]
+                pct = round(100 * considered.count("ok") / len(considered), 1) if considered else 100.0
+            detail = None
+            if state != "ok" and beats_raw:
+                detail = (beats_raw[-1].get("msg") or "").strip() or group_name or None
+            elif group_name:
+                detail = group_name
+            nodes.append(
+                {
+                    "id": mid,
+                    "label": m.get("name") or mid,
+                    "state": state,
+                    "uptimePercent": pct,
+                    "beats": beats,
+                    **({"detail": detail} if detail else {}),
+                }
+            )
+    up_count = sum(1 for n in nodes if n["state"] == "ok")
+    return {
+        "updatedAt": _now_iso(),
+        "stale": False,
+        "source": "uptime_kuma",
+        "nodes": nodes,
+        "links": [],
+        "summary": _summary(nodes),
+        "upCount": up_count,
+        "total": len(nodes),
+    }
+
+
+def _fetch_kuma_panel() -> dict:
+    """Récupère la page de statut Uptime Kuma (bloquant). Conserve le dernier
+    état valide et marque ``stale`` en cas d'échec."""
     global _last_good_panel
+    base, slug = _kuma_base(), _kuma_slug()
+    try:
+        status_page = _get_json(f"{base}/api/status-page/{slug}")
+        heartbeat = _get_json(f"{base}/api/status-page/heartbeat/{slug}")
+        panel = normalize_kuma(status_page, heartbeat)
+        _last_good_panel = panel
+        return panel
+    except Exception as e:  # réseau, slug invalide, format…
+        base_panel = _last_good_panel or {
+            "nodes": [], "links": [], "summary": [], "upCount": 0, "total": 0
+        }
+        return {**base_panel, "updatedAt": _now_iso(), "stale": True, "sourceError": str(e)}
+
+
+async def check_all() -> dict:
+    """Construit le panneau Services. Source = Uptime Kuma si configuré, sinon
+    sondes locales (http/tcp/self/manual)."""
+    global _last_good_panel
+    if kuma_configured():
+        return await asyncio.to_thread(_fetch_kuma_panel)
     try:
         cfg = load_config()
     except ValueError as e:
@@ -232,9 +326,19 @@ async def check_all() -> dict:
     return panel
 
 
+def mode() -> str:
+    """Source effective de la supervision."""
+    return "uptime_kuma" if kuma_configured() else "live_checks"
+
+
 def seed_panel() -> dict:
-    """Panneau initial **sans sonde** (synchrone, pour le bootstrap). Les états
+    """Panneau initial **sans réseau** (synchrone, pour le bootstrap). Les états
     réels arrivent à la première passe du watcher."""
+    if kuma_configured():
+        return _last_good_panel or {
+            "updatedAt": _now_iso(), "stale": False, "source": "uptime_kuma",
+            "nodes": [], "links": [], "summary": [], "upCount": 0, "total": 0,
+        }
     try:
         cfg = load_config()
     except ValueError as e:

@@ -87,7 +87,10 @@ En production, `npm run build` génère `frontend/dist`, servi directement par l
 - ✅ **Panneau Projets (P2) — source gérée à la main** : fichier `backend/data/projects.json` (édition directe ou via `GET`/`PUT /api/projects`), validé, normalisé, surveillé (watcher → `panel.update` temps réel).
 - ✅ **Panneau Jarvis (P4) — RAG texte** : base documentaire `backend/data/knowledge/*.md`, récupération TF-IDF (pur Python), réponse via Claude `claude-opus-4-8` si `ANTHROPIC_API_KEY` est défini (sinon mode *stub* hors-ligne). Saisie dans le panneau → `rag.event` temps réel (contexte + réponse en streaming). Endpoints `POST /api/rag/ask` et `POST /api/rag/reindex`.
 - ✅ **Panneau Jarvis (P4) — voix** : reconnaissance et synthèse vocales via la Web Speech API du navigateur (STT + TTS, fr-FR), bouton micro, lecture des réponses, mute, orbe réactif. Repli texte si l'API n'est pas supportée. Migration possible vers Whisper local côté serveur plus tard.
-- ✅ **Monitoring (P3) — supervision réelle** : l'agrégateur effectue lui-même des sondes de disponibilité (`http`/`tcp`/`self`/`manual`) décrites dans `backend/data/monitoring.json` (éditable à chaud ou via `GET`/`PUT /api/monitoring`), avec re-sonde périodique, latence par nœud, et santé globale dérivée. Métriques système du footer (CPU/RAM, température) **réelles** via `psutil`.
+- ✅ **Monitoring (P3)** : deux sources possibles —
+  1. **Uptime Kuma** (recommandé) : récupère **tous les monitors** d'une page de statut existante (pastille, heartbeats, % uptime, regroupements) ;
+  2. **sondes locales** (`http`/`tcp`/`self`/`manual`) via `backend/data/monitoring.json` si Uptime Kuma n'est pas configuré.
+  Affichage en liste type Uptime Kuma. Métriques système du footer (CPU/RAM, température) **réelles** via `psutil`.
 - ✅ **Tickets Everping (P1)** : pas d'API publique → on rejoue l'**API GraphQL privée** de la plateforme (`appv2.everping.eu`), authentifiée par **Firebase**. Avec un **refresh token** Firebase (capturé une fois), le serveur régénère seul les ID tokens et récupère les tickets en continu. Sans credentials, un **échantillon anonymisé** est servi (mode démo). Normalisation vers le contrat `Ticket`, tickets ouverts en tête.
 - ⏳ À venir : amélioration du RAG (embeddings + re-ranking). Trello (P2) possible en complément du mode manuel.
 
@@ -109,11 +112,20 @@ Le connecteur régénère les ID tokens automatiquement (valables ~1 h) et rafra
 
 ### Configurer la supervision (P3)
 
-Éditer `backend/data/monitoring.json` (appliqué en quelques secondes) ou `PUT /api/monitoring`.
-Chaque nœud a un `check` :
-- `{"type":"http","target":"https://hote/health"}` — sonde HTTP réelle (≥500 → `alert`, ≥400 → `warn`) ;
+**Option A — Uptime Kuma (recommandé, récupère tous tes monitors).**
+Sur ton Uptime Kuma : crée (ou réutilise) une **page de statut** incluant tes monitors, note son **slug** (ex. `https://monit.exemple/status/mon-slug` → slug = `mon-slug`). Puis :
+
+```bash
+export UPTIME_KUMA_BASE_URL="https://monit.bleucitron.pg3.xyz"
+export UPTIME_KUMA_STATUS_SLUG="mon-slug"
+```
+
+Jarvis lit `GET /api/status-page/<slug>` et `…/heartbeat/<slug>` (JSON public, sans login) et affiche tous les monitors. Aucune autre config requise.
+
+**Option B — sondes locales** (si pas d'Uptime Kuma). Éditer `backend/data/monitoring.json` (ou `PUT /api/monitoring`). Chaque nœud a un `check` :
+- `{"type":"http","target":"https://hote/health"}` — sonde HTTP (≥500 → `alert`, ≥400 → `warn`) ;
 - `{"type":"tcp","target":"hote:port"}` — test de connexion TCP ;
-- `{"type":"self"}` — cet agrégateur (toujours `ok` s'il répond) ;
+- `{"type":"self"}` — cet agrégateur ;
 - `{"type":"manual","state":"ok|warn|alert|maint"}` — état fixe.
 
 ### Activer Claude pour le RAG (P4)
