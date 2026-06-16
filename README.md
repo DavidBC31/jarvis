@@ -112,15 +112,24 @@ Le connecteur régénère les ID tokens automatiquement (valables ~1 h) et rafra
 
 ### Configurer la supervision (P3)
 
-**Option A — Uptime Kuma (recommandé, récupère tous tes monitors).**
-Sur ton Uptime Kuma : crée (ou réutilise) une **page de statut** incluant tes monitors, note son **slug** (ex. `https://monit.exemple/status/mon-slug` → slug = `mon-slug`). Puis :
+**Option A — Uptime Kuma via clé API (recommandé, récupère tous tes monitors).**
+Dans Uptime Kuma → **Settings → API Keys** → crée une clé. Puis :
 
 ```bash
 export UPTIME_KUMA_BASE_URL="https://monit.bleucitron.pg3.xyz"
-export UPTIME_KUMA_STATUS_SLUG="mon-slug"
+export UPTIME_KUMA_API_KEY="uk1_..."
 ```
 
-Jarvis lit `GET /api/status-page/<slug>` et `…/heartbeat/<slug>` (JSON public, sans login) et affiche tous les monitors. Aucune autre config requise.
+Jarvis lit l'endpoint `GET /metrics` (Basic Auth) et affiche **tous** les monitors. La barre de heartbeats et l'uptime sont accumulés côté Jarvis (l'endpoint /metrics ne fournit que l'état courant). ⚠️ Traiter la clé comme un secret (jamais dans Git).
+
+**Option A bis — via page de statut publique.** Crée une **page de statut** incluant tes monitors, note son **slug** (`https://…/status/<slug>`), puis :
+
+```bash
+export UPTIME_KUMA_BASE_URL="https://monit.bleucitron.pg3.xyz"
+export UPTIME_KUMA_STATUS_SLUG="<slug>"   # prioritaire sur la clé API
+```
+
+Cette variante fournit en plus l'historique et l'uptime directement depuis Uptime Kuma.
 
 **Option B — sondes locales** (si pas d'Uptime Kuma). Éditer `backend/data/monitoring.json` (ou `PUT /api/monitoring`). Chaque nœud a un `check` :
 - `{"type":"http","target":"https://hote/health"}` — sonde HTTP (≥500 → `alert`, ≥400 → `warn`) ;

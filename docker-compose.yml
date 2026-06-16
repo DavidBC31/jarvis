@@ -14,5 +14,8 @@ services:
       EVERPING_CLIENT_ID: ${EVERPING_CLIENT_ID:-}
       # Supervision via Uptime Kuma (sinon sondes locales) :
       UPTIME_KUMA_BASE_URL: ${UPTIME_KUMA_BASE_URL:-}
+      # … via clé API (endpoint /metrics) :
+      UPTIME_KUMA_API_KEY: ${UPTIME_KUMA_API_KEY:-}
+      # … ou via une page de statut publique :
       UPTIME_KUMA_STATUS_SLUG: ${UPTIME_KUMA_STATUS_SLUG:-}
     restart: unless-stopped

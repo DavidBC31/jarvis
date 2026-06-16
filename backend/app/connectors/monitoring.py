@@ -13,9 +13,11 @@ Le panneau produit respecte le contrat `docs/MODELES_DONNEES.md`
 from __future__ import annotations
 
 import asyncio
+import base64
 import contextlib
 import json
 import os
+import re
 import time
 import urllib.error
 import urllib.request
@@ -215,8 +217,12 @@ def _kuma_slug() -> str | None:
     return os.getenv("UPTIME_KUMA_STATUS_SLUG")
 
 
+def _kuma_api_key() -> str | None:
+    return os.getenv("UPTIME_KUMA_API_KEY")
+
+
 def kuma_configured() -> bool:
-    return bool(_kuma_base() and _kuma_slug())
+    return bool(_kuma_base() and (_kuma_slug() or _kuma_api_key()))
 
 
 def _get_json(url: str) -> dict:
@@ -274,6 +280,96 @@ def normalize_kuma(status_page: dict, heartbeat: dict) -> dict:
     }
 
 
+_LABEL_RE = re.compile(r'(\w+)="((?:[^"\\]|\\.)*)"')
+
+
+def _parse_metric_line(line: str) -> tuple[dict, float] | None:
+    """Parse une ligne Prometheus 'metric{labels} value' -> (labels, value)."""
+    brace = line.find("{")
+    end = line.rfind("}")
+    if brace == -1 or end == -1:
+        return None
+    labels = {k: v for k, v in _LABEL_RE.findall(line[brace + 1 : end])}
+    try:
+        value = float(line[end + 1 :].strip().split()[0])
+    except (ValueError, IndexError):
+        return None
+    return labels, value
+
+
+def parse_metrics(text: str) -> list[dict]:
+    """Extrait les monitors de la sortie /metrics d'Uptime Kuma."""
+    statuses: dict[str, int] = {}
+    rts: dict[str, float] = {}
+    for line in text.splitlines():
+        if line.startswith("monitor_status{"):
+            parsed = _parse_metric_line(line)
+            if parsed:
+                labels, value = parsed
+                name = labels.get("monitor_name")
+                if name:
+                    statuses[name] = int(value)
+        elif line.startswith("monitor_response_time{"):
+            parsed = _parse_metric_line(line)
+            if parsed:
+                labels, value = parsed
+                if labels.get("monitor_name"):
+                    rts[labels["monitor_name"]] = value
+    return [
+        {"name": n, "state": _KUMA_STATE.get(s, "warn"), "ms": rts.get(n)}
+        for n, s in statuses.items()
+    ]
+
+
+def _panel_from_metrics(rows: list[dict]) -> dict:
+    """Construit le panneau à partir des monitors /metrics (heartbeats + uptime
+    accumulés côté Jarvis, car /metrics ne fournit pas l'historique)."""
+    nodes = []
+    for r in sorted(rows, key=lambda x: x["name"].lower()):
+        beats, pct = _record_beat(r["name"], r["state"])
+        node = {
+            "id": r["name"],
+            "label": r["name"],
+            "state": r["state"],
+            "beats": beats,
+            "uptimePercent": pct,
+        }
+        if r.get("ms") is not None and r["state"] == "ok":
+            node["latencyMs"] = round(r["ms"], 1)
+        nodes.append(node)
+    return {
+        "updatedAt": _now_iso(),
+        "stale": False,
+        "source": "uptime_kuma",
+        "nodes": nodes,
+        "links": [],
+        "summary": _summary(nodes),
+        "upCount": sum(1 for n in nodes if n["state"] == "ok"),
+        "total": len(nodes),
+    }
+
+
+def _fetch_kuma_metrics_panel() -> dict:
+    """Récupère /metrics (Basic Auth avec la clé API). Dégradation gracieuse."""
+    global _last_good_panel
+    base, key = _kuma_base(), _kuma_api_key()
+    try:
+        token = base64.b64encode(f":{key}".encode()).decode()
+        req = urllib.request.Request(
+            f"{base}/metrics", headers={"Authorization": f"Basic {token}"}
+        )
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            text = resp.read().decode("utf-8", "replace")
+        panel = _panel_from_metrics(parse_metrics(text))
+        _last_good_panel = panel
+        return panel
+    except Exception as e:
+        base_panel = _last_good_panel or {
+            "nodes": [], "links": [], "summary": [], "upCount": 0, "total": 0
+        }
+        return {**base_panel, "updatedAt": _now_iso(), "stale": True, "sourceError": str(e)}
+
+
 def _fetch_kuma_panel() -> dict:
     """Récupère la page de statut Uptime Kuma (bloquant). Conserve le dernier
     état valide et marque ``stale`` en cas d'échec."""
@@ -296,8 +392,10 @@ async def check_all() -> dict:
     """Construit le panneau Services. Source = Uptime Kuma si configuré, sinon
     sondes locales (http/tcp/self/manual)."""
     global _last_good_panel
-    if kuma_configured():
+    if _kuma_base() and _kuma_slug():
         return await asyncio.to_thread(_fetch_kuma_panel)
+    if _kuma_base() and _kuma_api_key():
+        return await asyncio.to_thread(_fetch_kuma_metrics_panel)
     try:
         cfg = load_config()
     except ValueError as e:
@@ -328,7 +426,11 @@ async def check_all() -> dict:
 
 def mode() -> str:
     """Source effective de la supervision."""
-    return "uptime_kuma" if kuma_configured() else "live_checks"
+    if _kuma_base() and _kuma_slug():
+        return "uptime_kuma_status"
+    if _kuma_base() and _kuma_api_key():
+        return "uptime_kuma_metrics"
+    return "live_checks"
 
 
 def seed_panel() -> dict:
