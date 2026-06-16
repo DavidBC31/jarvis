@@ -24,6 +24,7 @@ from .hub import Hub
 from . import state as state_module
 from .connectors import projects as projects_conn
 from .connectors import monitoring as monitoring_conn
+from .connectors import everping as everping_conn
 from .connectors.projects import ProjectsPayload
 from .rag import service as rag_service
 from .rag import store as rag_store
@@ -39,6 +40,8 @@ BROADCAST_INTERVAL_S = 5.0
 # Cadence de surveillance des fichiers gérés à la main (projets, monitoring).
 PROJECTS_WATCH_INTERVAL_S = 2.0
 MONITORING_WATCH_INTERVAL_S = 2.0
+# Cadence de rafraîchissement des tickets Everping (si credentials configurés).
+EVERPING_POLL_INTERVAL_S = 60.0
 
 hub = Hub()
 FRONTEND_DIST = Path(__file__).resolve().parents[2] / "frontend" / "dist"
@@ -64,6 +67,14 @@ async def refresh_monitoring() -> dict:
     return panel
 
 
+async def refresh_everping() -> dict:
+    """Récupère les tickets Everping (hors boucle événementielle) et diffuse l'update."""
+    panel = await asyncio.to_thread(everping_conn.build_panel)
+    state_module.STATE["tickets"] = panel
+    await hub.broadcast({"type": "panel.update", "panel": "tickets", "data": panel})
+    return panel
+
+
 async def _broadcaster() -> None:
     """Boucle de fond : avance l'état et diffuse un snapshot aux écrans."""
     while True:
@@ -78,6 +89,15 @@ async def _projects_watcher() -> None:
     while True:
         await asyncio.sleep(PROJECTS_WATCH_INTERVAL_S)
         await refresh_projects()
+
+
+async def _everping_watcher() -> None:
+    """Rafraîchit périodiquement les tickets Everping (si credentials)."""
+    while True:
+        await asyncio.sleep(EVERPING_POLL_INTERVAL_S)
+        if everping_conn.has_credentials():
+            with contextlib.suppress(Exception):
+                await refresh_everping()
 
 
 async def _monitoring_watcher() -> None:
@@ -99,10 +119,14 @@ async def _monitoring_watcher() -> None:
 async def lifespan(_: FastAPI):
     rag_store.reindex()  # construit l'index documentaire au démarrage
     await refresh_monitoring()  # première sonde réelle des services
+    if everping_conn.has_credentials():
+        with contextlib.suppress(Exception):
+            await refresh_everping()  # première récupération des tickets réels
     tasks = [
         asyncio.create_task(_broadcaster()),
         asyncio.create_task(_projects_watcher()),
         asyncio.create_task(_monitoring_watcher()),
+        asyncio.create_task(_everping_watcher()),
     ]
     try:
         yield
@@ -134,7 +158,7 @@ async def health() -> JSONResponse:
             "screens": hub.count,
             "serverTime": state_module.STATE["serverTime"],
             "connectors": {
-                "everping": "simulated",
+                "everping": everping_conn.mode(),
                 "projects": "manual_file",
                 "monitoring": "live_checks",
                 "rag": {"mode": rag_llm.mode(), "chunks": rag_store.chunk_count()},

@@ -75,7 +75,24 @@ En production, `npm run build` génère `frontend/dist`, servi directement par l
 - ✅ **Panneau Jarvis (P4) — RAG texte** : base documentaire `backend/data/knowledge/*.md`, récupération TF-IDF (pur Python), réponse via Claude `claude-opus-4-8` si `ANTHROPIC_API_KEY` est défini (sinon mode *stub* hors-ligne). Saisie dans le panneau → `rag.event` temps réel (contexte + réponse en streaming). Endpoints `POST /api/rag/ask` et `POST /api/rag/reindex`.
 - ✅ **Panneau Jarvis (P4) — voix** : reconnaissance et synthèse vocales via la Web Speech API du navigateur (STT + TTS, fr-FR), bouton micro, lecture des réponses, mute, orbe réactif. Repli texte si l'API n'est pas supportée. Migration possible vers Whisper local côté serveur plus tard.
 - ✅ **Monitoring (P3) — supervision réelle** : l'agrégateur effectue lui-même des sondes de disponibilité (`http`/`tcp`/`self`/`manual`) décrites dans `backend/data/monitoring.json` (éditable à chaud ou via `GET`/`PUT /api/monitoring`), avec re-sonde périodique, latence par nœud, et santé globale dérivée. Métriques système du footer (CPU/RAM, température) **réelles** via `psutil`.
-- ⏳ À venir : connecteur Everping (P1, en attente de leur API) ; amélioration du RAG (embeddings + re-ranking). Trello (P2) possible en complément du mode manuel.
+- ✅ **Tickets Everping (P1)** : pas d'API publique → on rejoue l'**API GraphQL privée** de la plateforme (`appv2.everping.eu`), authentifiée par **Firebase**. Avec un **refresh token** Firebase (capturé une fois), le serveur régénère seul les ID tokens et récupère les tickets en continu. Sans credentials, un **échantillon anonymisé** est servi (mode démo). Normalisation vers le contrat `Ticket`, tickets ouverts en tête.
+- ⏳ À venir : amélioration du RAG (embeddings + re-ranking). Trello (P2) possible en complément du mode manuel.
+
+### Activer les tickets Everping réels (P1)
+
+L'API Everping est protégée par Firebase Auth (SSO Google). Pour que le serveur s'y connecte seul :
+
+1. Connecte-toi à `https://appv2.everping.eu` dans Chrome.
+2. **DevTools (F12) → Application → IndexedDB → `firebaseLocalStorageDb` → `firebaseLocalStorage`** : ouvre l'entrée et copie `value.stsTokenManager.refreshToken`.
+3. Sur le serveur, avant `./run.sh` :
+
+```bash
+export EVERPING_REFRESH_TOKEN="AMf-..."     # le refresh token copié
+# optionnel (valeurs par défaut = Bleu Citron) :
+# export EVERPING_CLIENT_ID="ecd0193d-..."
+```
+
+Le connecteur régénère les ID tokens automatiquement (valables ~1 h) et rafraîchit les tickets toutes les 60 s. Dépannage rapide : `export EVERPING_ID_TOKEN="<jwt>"` pour tester avec un token direct (expire en ~1 h).
 
 ### Configurer la supervision (P3)
 

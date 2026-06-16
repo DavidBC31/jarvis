@@ -1,0 +1,60 @@
+{
+  "_doc": "Échantillon ANONYMISÉ au format de la réponse GraphQL Everping (opération TicketsPage). Sert au mode démo/hors-ligne et aux tests. Les vraies données proviennent de l'API à l'exécution (jamais committées).",
+  "tickets": [
+    {
+      "id": "aaaa0000000000000000aa01",
+      "status": "Scheduled",
+      "type": "SupportIssue",
+      "category": "Dépannage et bug divers",
+      "application": "MacOS",
+      "topic": "Incident - Compte - Poste qui ne démarre plus",
+      "lastMessageAt": "2026-06-16T12:40:32.000Z",
+      "user": { "name": "Alice Démo", "email": "alice@example.test" },
+      "technicianOwners": [{ "name": "Tech A" }]
+    },
+    {
+      "id": "aaaa0000000000000000aa02",
+      "status": "WaitingCustomer",
+      "type": "SupportIssue",
+      "category": "Dépannage et bug divers",
+      "application": "Google Workspace",
+      "topic": "Incident - Workspace - Ouverture de document",
+      "lastMessageAt": "2026-06-16T12:06:38.000Z",
+      "user": { "name": "Bruno Démo", "email": "bruno@example.test" },
+      "technicianOwners": [{ "name": "Tech B" }]
+    },
+    {
+      "id": "aaaa0000000000000000aa03",
+      "status": "NoAnswer",
+      "type": "SupportRequest",
+      "category": "Gestion des utilisateurs ou licences",
+      "application": "Slack",
+      "topic": "Demande - Slack - Création de canal",
+      "lastMessageAt": "2026-06-12T12:54:00.000Z",
+      "user": { "name": "Chloé Démo", "email": "chloe@example.test" },
+      "technicianOwners": []
+    },
+    {
+      "id": "aaaa0000000000000000aa04",
+      "status": "Done",
+      "type": "Config",
+      "category": "Suivi de configuration / réinitialisation de poste",
+      "application": "",
+      "topic": "Configuration poste de Démo",
+      "lastMessageAt": "2026-06-08T13:52:52.000Z",
+      "user": { "name": "David Démo", "email": "david@example.test" },
+      "technicianOwners": [{ "name": "Tech C" }]
+    },
+    {
+      "id": "aaaa0000000000000000aa05",
+      "status": "Done",
+      "type": "SupportRequest",
+      "category": "Comment ça fonctionne ?",
+      "application": "Microsoft Outlook",
+      "topic": "Demande - Mail - Envoyer à une liste de destinataires",
+      "lastMessageAt": "2026-06-11T11:40:50.000Z",
+      "user": { "name": "Eva Démo", "email": "eva@example.test" },
+      "technicianOwners": [{ "name": "Tech B" }]
+    }
+  ]
+}

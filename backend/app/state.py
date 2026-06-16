@@ -12,6 +12,7 @@ from datetime import datetime, timezone
 
 from .connectors import projects as projects_conn
 from .connectors import monitoring as monitoring_conn
+from .connectors import everping as everping_conn
 
 try:  # métriques système réelles si psutil est disponible
     import psutil
@@ -63,27 +64,9 @@ def _meta(stale: bool = False, error: str | None = None) -> dict:
 
 
 def seed_tickets() -> dict:
-    tickets = [
-        {"id": "EVP-10293", "subject": "Imprimante 2e étage hors ligne",
-         "status": "in_progress", "assignedTo": "M. Durand", "priority": "high",
-         "updatedAt": _now_iso()},
-        {"id": "EVP-10288", "subject": "Demande accès VPN nouveau collaborateur",
-         "status": "new", "assignedTo": None, "priority": "medium",
-         "updatedAt": _now_iso()},
-        {"id": "EVP-10275", "subject": "Migration boîte mail direction",
-         "status": "on_hold", "assignedTo": "S. Petit", "priority": "urgent",
-         "updatedAt": _now_iso()},
-        {"id": "EVP-10270", "subject": "Lenteur partage de fichiers",
-         "status": "in_progress", "assignedTo": "L. Bernard", "priority": "medium",
-         "updatedAt": _now_iso()},
-        {"id": "EVP-10261", "subject": "Mise à jour licence Office",
-         "status": "new", "assignedTo": None, "priority": "low",
-         "updatedAt": _now_iso()},
-    ]
-    counts: dict[str, int] = {}
-    for t in tickets:
-        counts[t["status"]] = counts.get(t["status"], 0) + 1
-    return {**_meta(), "tickets": tickets, "statusCounts": counts, "total": len(tickets)}
+    # Panneau Tickets (P1) : connecteur Everping (API GraphQL privée). Seed sans
+    # réseau (échantillon) ; les tickets réels arrivent au 1er passage du watcher.
+    return everping_conn.seed_panel()
 
 
 def seed_projects() -> dict:
