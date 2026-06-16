@@ -23,6 +23,42 @@ l'infrastructure réseau, et expose un assistant vocal **RAG**
 - [`docs/SPECIFICATIONS_TECHNIQUES.md`](docs/SPECIFICATIONS_TECHNIQUES.md) — spécifications détaillées frontend / backend / RAG / déploiement.
 - [`docs/MODELES_DONNEES.md`](docs/MODELES_DONNEES.md) — schémas des contrats d'API et payloads temps réel.
 
+## Structure du dépôt
+
+```
+backend/   Agrégateur FastAPI : REST (/api) + hub WebSocket (/ws) + état simulé
+frontend/  SPA React + TS + Vite + Tailwind (header/logo, grille 16:9, footer, panneaux)
+docs/      Spécifications techniques et contrats de données
+```
+
+## Démarrage rapide (dev)
+
+**Backend** (port 8000) :
+
+```bash
+cd backend
+python3 -m venv .venv && . .venv/bin/activate
+pip install -r requirements.txt
+uvicorn app.main:app --reload --port 8000
+```
+
+**Frontend** (port 5173, proxie `/api` et `/ws` vers le backend) :
+
+```bash
+cd frontend
+npm install
+npm run dev      # http://localhost:5173
+```
+
+En production, `npm run build` génère `frontend/dist`, servi directement par l'agrégateur
+(la SPA est alors disponible sur le port du backend).
+
+### État d'avancement (brique 1 — socle)
+
+- ✅ Agrégateur FastAPI : `/api/health`, `/api/snapshot`, hub WebSocket `/ws` (snapshot d'amorçage + diffusion périodique).
+- ✅ SPA : header + logo animé, grille 16:9, 4 panneaux câblés au store (Zustand) via WebSocket avec reconnexion exponentielle, footer (horloge live, uptime, santé Mac Studio, activity stream).
+- ⏳ Données encore **simulées** côté serveur — les connecteurs réels (Everping, Jira/Trello, Nagios/Zabbix) et le service RAG (panneau 4) sont les briques suivantes.
+
 ## Stack retenue (résumé)
 
 - **Frontend** : React + TypeScript + Vite, Tailwind CSS, WebSocket, Recharts/ECharts, animation orbe via WebGL/Canvas.

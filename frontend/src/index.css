@@ -1,0 +1,45 @@
+@import "./styles/tokens.css";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font-family: "Inter", "IBM Plex Sans", sans-serif;
+  overflow: hidden; /* mode kiosque 16:9, pas de scroll global */
+}
+
+/* Lueur néon réutilisable */
+.neon-text {
+  text-shadow: 0 0 8px var(--neon-cyan);
+}
+.neon-border {
+  border: 1px solid var(--panel-border);
+  box-shadow: 0 0 12px rgba(0, 229, 255, 0.12) inset;
+}
+
+@keyframes orbit {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes pulse-glow {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
