@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { connectDashboard } from "./ws";
 import { Header } from "./components/Header";
 import { Footer } from "./components/Footer";
@@ -6,9 +6,26 @@ import { TicketsPanel } from "./components/panels/TicketsPanel";
 import { ProjectsPanel } from "./components/panels/ProjectsPanel";
 import { ServicesPanel } from "./components/panels/ServicesPanel";
 import { JarvisPanel } from "./components/panels/JarvisPanel";
+import { AdminProjects } from "./components/admin/AdminProjects";
+
+// Routage minimal par hash : "#admin" → admin, sinon dashboard.
+function useHashRoute() {
+  const [route, setRoute] = useState(() => location.hash.replace("#", ""));
+  useEffect(() => {
+    const onChange = () => setRoute(location.hash.replace("#", ""));
+    window.addEventListener("hashchange", onChange);
+    return () => window.removeEventListener("hashchange", onChange);
+  }, []);
+  return route;
+}
 
 export function App() {
+  const route = useHashRoute();
   useEffect(() => connectDashboard(), []);
+
+  if (route === "admin") {
+    return <AdminProjects />;
+  }
 
   return (
     <div className="h-full w-full p-3 flex flex-col gap-3">

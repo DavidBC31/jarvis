@@ -23,10 +23,14 @@ export function Header() {
         </div>
       </div>
       <div
-        className="absolute right-4 top-3 text-[10px] tracking-widest"
-        style={{ color: connection === "online" ? "var(--status-ok)" : "var(--status-warn)" }}
+        className="absolute right-4 top-3 flex items-center gap-3 text-[10px] tracking-widest"
       >
-        ● {STATUS_LABEL[connection]}
+        <a href="#admin" className="text-neon-cyan opacity-70 hover:opacity-100">
+          ADMIN
+        </a>
+        <span style={{ color: connection === "online" ? "var(--status-ok)" : "var(--status-warn)" }}>
+          ● {STATUS_LABEL[connection]}
+        </span>
       </div>
     </header>
   );

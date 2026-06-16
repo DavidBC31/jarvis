@@ -62,8 +62,13 @@ En production, `npm run build` génère `frontend/dist`, servi directement par l
 
 ### Gérer les projets (P2) à la main
 
-Éditer directement `backend/data/projects.json` (le watcher pousse la mise à jour à l'écran),
-ou via l'API :
+Trois possibilités :
+
+1. **Page d'admin web** : ouvrir `http://localhost:5173/#admin` (ou le lien **ADMIN** en haut
+   à droite du dashboard) — formulaire pour ajouter / modifier / supprimer les projets, bouton
+   *Enregistrer* qui valide, réécrit le fichier et diffuse la mise à jour à l'écran.
+2. **Édition directe** du fichier `backend/data/projects.json` (le watcher pousse la mise à jour).
+3. **API REST** :
 
 ```bash
 curl -X PUT http://localhost:8000/api/projects \
