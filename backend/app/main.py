@@ -23,6 +23,7 @@ from pydantic import BaseModel, Field
 from .hub import Hub
 from . import state as state_module
 from .connectors import projects as projects_conn
+from .connectors import monitoring as monitoring_conn
 from .connectors.projects import ProjectsPayload
 from .rag import service as rag_service
 from .rag import store as rag_store
@@ -35,8 +36,9 @@ class AskPayload(BaseModel):
 # Intervalle de diffusion du snapshot (secondes). Les vrais connecteurs
 # pousseront des `panel.update` ciblés à leurs propres cadences.
 BROADCAST_INTERVAL_S = 5.0
-# Cadence de surveillance du fichier projets géré à la main.
+# Cadence de surveillance des fichiers gérés à la main (projets, monitoring).
 PROJECTS_WATCH_INTERVAL_S = 2.0
+MONITORING_WATCH_INTERVAL_S = 2.0
 
 hub = Hub()
 FRONTEND_DIST = Path(__file__).resolve().parents[2] / "frontend" / "dist"
@@ -51,6 +53,15 @@ async def refresh_projects(force: bool = False) -> dict | None:
         await hub.broadcast({"type": "panel.update", "panel": "projects", "data": panel})
         return panel
     return None
+
+
+async def refresh_monitoring() -> dict:
+    """Sonde les services, met à jour l'état + la santé globale, diffuse l'update."""
+    panel = await monitoring_conn.check_all()
+    state_module.STATE["services"] = panel
+    state_module.recompute_footer_health()
+    await hub.broadcast({"type": "panel.update", "panel": "services", "data": panel})
+    return panel
 
 
 async def _broadcaster() -> None:
@@ -69,12 +80,29 @@ async def _projects_watcher() -> None:
         await refresh_projects()
 
 
+async def _monitoring_watcher() -> None:
+    """Re-sonde les services périodiquement (cadence de la config) et dès que le
+    fichier de config change."""
+    loop = asyncio.get_event_loop()
+    monitoring_conn.poll_changed()  # mtime initial
+    last_check = loop.time()
+    while True:
+        await asyncio.sleep(MONITORING_WATCH_INTERVAL_S)
+        changed = monitoring_conn.poll_changed()
+        due = (loop.time() - last_check) >= monitoring_conn.interval_seconds()
+        if changed or due:
+            await refresh_monitoring()
+            last_check = loop.time()
+
+
 @contextlib.asynccontextmanager
 async def lifespan(_: FastAPI):
     rag_store.reindex()  # construit l'index documentaire au démarrage
+    await refresh_monitoring()  # première sonde réelle des services
     tasks = [
         asyncio.create_task(_broadcaster()),
         asyncio.create_task(_projects_watcher()),
+        asyncio.create_task(_monitoring_watcher()),
     ]
     try:
         yield
@@ -108,7 +136,7 @@ async def health() -> JSONResponse:
             "connectors": {
                 "everping": "simulated",
                 "projects": "manual_file",
-                "monitoring": "simulated",
+                "monitoring": "live_checks",
                 "rag": {"mode": rag_llm.mode(), "chunks": rag_store.chunk_count()},
             },
         }
@@ -136,6 +164,32 @@ async def put_projects(payload: ProjectsPayload) -> JSONResponse:
     except ValueError as e:
         return JSONResponse({"error": str(e)}, status_code=422)
     panel = await refresh_projects(force=True)
+    return JSONResponse({"panel": panel})
+
+
+@app.get("/api/monitoring")
+async def get_monitoring() -> JSONResponse:
+    """Config de supervision éditable + panneau courant."""
+    return JSONResponse(
+        {"config": monitoring_conn.read_config_raw(), "panel": state_module.STATE["services"]}
+    )
+
+
+@app.put("/api/monitoring")
+async def put_monitoring(config: dict) -> JSONResponse:
+    """Remplace la config de supervision, re-sonde et diffuse l'update."""
+    try:
+        monitoring_conn.write_config(config)
+    except ValueError as e:
+        return JSONResponse({"error": str(e)}, status_code=422)
+    panel = await refresh_monitoring()
+    return JSONResponse({"panel": panel})
+
+
+@app.post("/api/monitoring/check")
+async def post_monitoring_check() -> JSONResponse:
+    """Force une re-sonde immédiate de tous les services."""
+    panel = await refresh_monitoring()
     return JSONResponse({"panel": panel})
 
 

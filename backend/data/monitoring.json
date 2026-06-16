@@ -1,0 +1,19 @@
+{
+  "intervalSeconds": 15,
+  "nodes": [
+    { "id": "files", "label": "Serveur Fichiers", "x": 1, "y": 0, "check": { "type": "manual", "state": "ok" } },
+    { "id": "mail", "label": "Messagerie", "x": 2, "y": 0, "check": { "type": "manual", "state": "ok" } },
+    { "id": "vpn", "label": "VPN", "x": 0, "y": 1, "detail": "Maintenance planifiée", "check": { "type": "manual", "state": "maint" } },
+    { "id": "web", "label": "Web", "x": 1, "y": 1, "check": { "type": "self" } },
+    { "id": "print", "label": "Imprimantes", "x": 2, "y": 1, "detail": "Imprimante 2e étage hors ligne", "check": { "type": "manual", "state": "alert" } },
+    { "id": "office", "label": "Office", "x": 1, "y": 2, "check": { "type": "manual", "state": "ok" } }
+  ],
+  "links": [
+    { "from": "files", "to": "web" },
+    { "from": "mail", "to": "web" },
+    { "from": "vpn", "to": "web" },
+    { "from": "web", "to": "print" },
+    { "from": "web", "to": "office" }
+  ],
+  "_doc": "check.type: 'http'/'tcp' = vraie sonde (target='https://hote/health' ou 'hote:port'), 'self' = ce serveur agrégateur, 'manual' = état fixe (state: ok|warn|alert|maint). Modifiez ce fichier ou utilisez PUT /api/monitoring : le changement est appliqué en quelques secondes."
+}

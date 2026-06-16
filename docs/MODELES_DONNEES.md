@@ -191,6 +191,9 @@ Endpoints minimaux exposés par l'agrégateur (le temps réel passe ensuite par 
 | `GET`   | `/ws`                 | Mise à niveau WebSocket (flux temps réel). |
 | `GET`   | `/api/projects`       | Liste éditable des projets (source gérée à la main) + panneau courant. |
 | `PUT`   | `/api/projects`       | Remplace la liste (corps `{ projects: ProjectInput[] }`), réécrit le fichier source, diffuse un `panel.update`. `422` si invalide. |
+| `GET`   | `/api/monitoring`     | Config de supervision éditable + panneau services courant. |
+| `PUT`   | `/api/monitoring`     | Remplace la config (`nodes`/`links`/`intervalSeconds`), re-sonde et diffuse un `panel.update`. `422` si invalide. |
+| `POST`  | `/api/monitoring/check` | Force une re-sonde immédiate de tous les services. |
 | `POST`  | `/api/rag/ask`        | Pose une question (texte) au RAG : `{ question }`. Diffuse les `rag.event` et renvoie `{ answer, context, mode }`. |
 | `POST`  | `/api/rag/voice`      | (à venir) flux audio entrant du micro → STT → RAG. |
 | `POST`  | `/api/rag/reindex`    | Réindexe la base documentaire (`backend/data/knowledge/`). |

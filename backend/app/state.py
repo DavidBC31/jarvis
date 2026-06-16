@@ -11,6 +11,39 @@ import random
 from datetime import datetime, timezone
 
 from .connectors import projects as projects_conn
+from .connectors import monitoring as monitoring_conn
+
+try:  # métriques système réelles si psutil est disponible
+    import psutil
+
+    psutil.cpu_percent(interval=None)  # amorce la mesure (1er appel = 0.0)
+except Exception:  # pragma: no cover - dépend de l'environnement
+    psutil = None
+
+
+def read_system_metrics() -> dict:
+    """Métriques de la machine hôte (Mac Studio en prod). Utilise psutil si
+    présent, sinon des valeurs simulées."""
+    if psutil is None:
+        return {
+            "temperatureC": round(40 + random.uniform(0, 8), 1),
+            "cpuLoadPercent": round(12 + random.uniform(0, 30), 1),
+            "ramUsedPercent": round(45 + random.uniform(0, 10), 1),
+        }
+    temp = None
+    try:
+        sensors = psutil.sensors_temperatures()  # absent sur macOS/Windows
+        for entries in sensors.values():
+            if entries:
+                temp = round(entries[0].current, 1)
+                break
+    except Exception:
+        temp = None
+    return {
+        "temperatureC": temp if temp is not None else round(40 + random.uniform(0, 5), 1),
+        "cpuLoadPercent": round(psutil.cpu_percent(interval=None), 1),
+        "ramUsedPercent": round(psutil.virtual_memory().percent, 1),
+    }
 
 SCHEMA_VERSION = 1
 
@@ -59,30 +92,9 @@ def seed_projects() -> dict:
 
 
 def seed_services() -> dict:
-    nodes = [
-        {"id": "files", "label": "Serveur Fichiers", "state": "ok", "x": 1, "y": 0},
-        {"id": "mail", "label": "Messagerie", "state": "ok", "x": 2, "y": 0},
-        {"id": "vpn", "label": "VPN", "state": "maint", "x": 0, "y": 1,
-         "detail": "Scheduled Maint."},
-        {"id": "web", "label": "Web", "state": "ok", "x": 1, "y": 1},
-        {"id": "print", "label": "Imprimantes", "state": "alert", "x": 2, "y": 1,
-         "detail": "Imprimante 2e étage hors ligne"},
-        {"id": "office", "label": "Office", "state": "ok", "x": 1, "y": 2},
-    ]
-    links = [
-        {"from": "files", "to": "web"}, {"from": "mail", "to": "web"},
-        {"from": "vpn", "to": "web"}, {"from": "web", "to": "print"},
-        {"from": "web", "to": "office"},
-    ]
-    summary = []
-    label_map = {"maint": "MAINT [Orange]", "alert": "ALERT [Red]", "warn": "WARN [Yellow]"}
-    for n in nodes:
-        if n["state"] in label_map:
-            line = f'{n["label"]}: {label_map[n["state"]]}'
-            if n.get("detail"):
-                line += f' — {n["detail"]}'
-            summary.append(line)
-    return {**_meta(), "nodes": nodes, "links": links, "summary": summary}
+    # Panneau Services (P3) : topologie + sondes gérées par le connecteur
+    # monitoring. Seed sans sonde (les états réels arrivent au 1er passage).
+    return monitoring_conn.seed_panel()
 
 
 def seed_footer() -> dict:
@@ -94,7 +106,7 @@ def seed_footer() -> dict:
             "healthy": healthy,
             "uptimePercent": 98.5,
         },
-        "macStudio": {"temperatureC": 42.0, "cpuLoadPercent": 18.0, "ramUsedPercent": 47.0},
+        "macStudio": read_system_metrics(),
         "activityStream": [
             {"id": "act-1", "at": _now_iso(), "label": "Service Alert VPN",
              "severity": "warn"},
@@ -133,6 +145,11 @@ def _recompute_footer_health() -> None:
     )
 
 
+def recompute_footer_health() -> None:
+    """Recalcule la santé globale (appelée par le connecteur monitoring)."""
+    _recompute_footer_health()
+
+
 def tick() -> dict:
     """Avance l'horloge serveur et applique une légère variation (simulation).
 
@@ -140,11 +157,7 @@ def tick() -> dict:
     connecteurs qui muteront l'état et déclencheront des `panel.update` ciblés.
     """
     STATE["serverTime"] = _now_iso()
-
-    mac = STATE["footer"]["macStudio"]
-    mac["temperatureC"] = round(40 + random.uniform(0, 8), 1)
-    mac["cpuLoadPercent"] = round(12 + random.uniform(0, 30), 1)
-    mac["ramUsedPercent"] = round(45 + random.uniform(0, 10), 1)
+    STATE["footer"]["macStudio"] = read_system_metrics()
     STATE["footer"]["updatedAt"] = _now_iso()
 
     _recompute_footer_health()

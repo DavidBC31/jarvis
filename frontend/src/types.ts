@@ -55,6 +55,7 @@ export interface ServiceNode {
   x?: number;
   y?: number;
   detail?: string;
+  latencyMs?: number;
 }
 
 export interface ServiceLink {

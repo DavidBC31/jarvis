@@ -3,3 +3,5 @@ fastapi==0.115.6
 uvicorn[standard]==0.34.0
 # Service RAG (panneau Jarvis) — utilisé si ANTHROPIC_API_KEY est défini.
 anthropic==0.69.0
+# Monitoring (P3) — métriques système réelles de l'hôte (repli simulé si absent).
+psutil==6.1.1
