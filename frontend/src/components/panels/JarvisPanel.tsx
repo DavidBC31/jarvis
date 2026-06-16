@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { Panel } from "../Panel";
 import { useDashboard } from "../../store";
 import { useVoice } from "../../hooks/useVoice";
+import { useWakeWord } from "../../hooks/useWakeWord";
 import type { RagPhase } from "../../types";
 
 const PHASE_LABEL: Record<RagPhase, string> = {
@@ -15,6 +16,7 @@ export function JarvisPanel() {
   const rag = useDashboard((s) => s.rag);
   const [input, setInput] = useState("");
   const [muted, setMuted] = useState(false);
+  const [wake, setWake] = useState(false);
   const voice = useVoice("fr-FR");
   const mutedRef = useRef(muted);
   mutedRef.current = muted;
@@ -22,6 +24,17 @@ export function JarvisPanel() {
   const busy = rag.phase === "thinking" || rag.phase === "speaking";
   // Phase effective : la reconnaissance vocale est locale, le reste vient du serveur.
   const phase: RagPhase = voice.listening ? "listening" : rag.phase;
+
+  // Mot-clé « Hey Jarvis » : écoute continue, en pause pendant que Jarvis
+  // parle/réfléchit ou pendant une saisie micro (évite l'auto-déclenchement).
+  useWakeWord({
+    enabled: wake,
+    paused: busy || voice.listening,
+    onCommand: (q) => {
+      setInput(q);
+      void submit(q);
+    },
+  });
 
   const submit = async (question: string) => {
     const q = question.trim();
@@ -96,6 +109,20 @@ export function JarvisPanel() {
                 className="disabled:opacity-40"
               >
                 {muted ? "🔇" : "🔊"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setWake((w) => !w)}
+                disabled={!voice.sttSupported}
+                title={
+                  voice.sttSupported
+                    ? 'Activation vocale par mot-clé : dites « Hey Jarvis, … »'
+                    : "Reconnaissance vocale indisponible"
+                }
+                className="disabled:opacity-40"
+                style={{ color: wake ? "var(--neon-cyan)" : undefined }}
+              >
+                {wake ? "🟢" : "⚪"} Hey Jarvis
               </button>
               <span title="Base de documents">🗄️ BDD</span>
               <span className="ml-auto tracking-widest" style={{ color: "var(--neon-cyan)" }}>

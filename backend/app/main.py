@@ -217,6 +217,19 @@ async def post_monitoring_check() -> JSONResponse:
     return JSONResponse({"panel": panel})
 
 
+@app.get("/api/everping")
+async def get_everping() -> JSONResponse:
+    """Diagnostic Everping : mode courant + panneau (avec `sourceError` si échec)."""
+    return JSONResponse({"mode": everping_conn.mode(), "panel": state_module.STATE["tickets"]})
+
+
+@app.post("/api/everping/refresh")
+async def post_everping_refresh() -> JSONResponse:
+    """Force une récupération Everping immédiate (test du token / diagnostic)."""
+    panel = await refresh_everping()
+    return JSONResponse({"mode": everping_conn.mode(), "panel": panel})
+
+
 @app.post("/api/rag/ask")
 async def rag_ask(payload: AskPayload) -> JSONResponse:
     """Pose une question au RAG : récupération + génération, diffusion des
