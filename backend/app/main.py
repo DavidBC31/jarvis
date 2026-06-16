@@ -18,10 +18,19 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
+from pydantic import BaseModel, Field
+
 from .hub import Hub
 from . import state as state_module
 from .connectors import projects as projects_conn
 from .connectors.projects import ProjectsPayload
+from .rag import service as rag_service
+from .rag import store as rag_store
+from .rag import llm as rag_llm
+
+
+class AskPayload(BaseModel):
+    question: str = Field(min_length=1, max_length=2000)
 
 # Intervalle de diffusion du snapshot (secondes). Les vrais connecteurs
 # pousseront des `panel.update` ciblés à leurs propres cadences.
@@ -62,6 +71,7 @@ async def _projects_watcher() -> None:
 
 @contextlib.asynccontextmanager
 async def lifespan(_: FastAPI):
+    rag_store.reindex()  # construit l'index documentaire au démarrage
     tasks = [
         asyncio.create_task(_broadcaster()),
         asyncio.create_task(_projects_watcher()),
@@ -96,11 +106,10 @@ async def health() -> JSONResponse:
             "screens": hub.count,
             "serverTime": state_module.STATE["serverTime"],
             "connectors": {
-                # Brique 1 : connecteurs encore simulés.
                 "everping": "simulated",
-                "projects": "simulated",
+                "projects": "manual_file",
                 "monitoring": "simulated",
-                "rag": "not_started",
+                "rag": {"mode": rag_llm.mode(), "chunks": rag_store.chunk_count()},
             },
         }
     )
@@ -128,6 +137,21 @@ async def put_projects(payload: ProjectsPayload) -> JSONResponse:
         return JSONResponse({"error": str(e)}, status_code=422)
     panel = await refresh_projects(force=True)
     return JSONResponse({"panel": panel})
+
+
+@app.post("/api/rag/ask")
+async def rag_ask(payload: AskPayload) -> JSONResponse:
+    """Pose une question au RAG : récupération + génération, diffusion des
+    `rag.event` aux écrans, et renvoi de la réponse complète."""
+    result = await rag_service.ask(payload.question, hub.broadcast)
+    return JSONResponse(result)
+
+
+@app.post("/api/rag/reindex")
+async def rag_reindex() -> JSONResponse:
+    """Réindexe la base documentaire (après ajout/modif de documents)."""
+    n = rag_store.reindex()
+    return JSONResponse({"chunks": n, "mode": rag_llm.mode()})
 
 
 @app.websocket("/ws")

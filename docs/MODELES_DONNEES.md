@@ -191,8 +191,9 @@ Endpoints minimaux exposés par l'agrégateur (le temps réel passe ensuite par 
 | `GET`   | `/ws`                 | Mise à niveau WebSocket (flux temps réel). |
 | `GET`   | `/api/projects`       | Liste éditable des projets (source gérée à la main) + panneau courant. |
 | `PUT`   | `/api/projects`       | Remplace la liste (corps `{ projects: ProjectInput[] }`), réécrit le fichier source, diffuse un `panel.update`. `422` si invalide. |
-| `POST`  | `/api/rag/voice`      | (interne) flux audio entrant du micro → service RAG. |
-| `POST`  | `/api/rag/reindex`    | (interne/admin) déclenche la ré-indexation de la base documentaire. |
+| `POST`  | `/api/rag/ask`        | Pose une question (texte) au RAG : `{ question }`. Diffuse les `rag.event` et renvoie `{ answer, context, mode }`. |
+| `POST`  | `/api/rag/voice`      | (à venir) flux audio entrant du micro → STT → RAG. |
+| `POST`  | `/api/rag/reindex`    | Réindexe la base documentaire (`backend/data/knowledge/`). |
 
 Tous les schémas ci-dessus sont versionnés : tout changement incompatible incrémente
 un champ `schemaVersion` dans `snapshot` pour permettre une montée de version coordonnée front/back.

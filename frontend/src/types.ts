@@ -98,7 +98,23 @@ export interface DashboardState {
   footer: FooterPanel;
 }
 
+export type RagPhase = "idle" | "listening" | "thinking" | "speaking";
+
+export interface RagContext {
+  equipment: string;
+  procedure: string;
+  sourceId?: string;
+}
+
+export type RagEvent =
+  | { kind: "phase"; phase: RagPhase }
+  | { kind: "transcript"; text: string; final: boolean }
+  | { kind: "answer.delta"; text: string }
+  | { kind: "answer.done" }
+  | ({ kind: "context" } & RagContext)
+  | { kind: "audio.level"; level: number };
+
 export type WsMessage =
   | { type: "snapshot"; data: DashboardState }
   | { type: "panel.update"; panel: PanelId; data: unknown }
-  | { type: "rag.event"; data: unknown };
+  | { type: "rag.event"; data: RagEvent };

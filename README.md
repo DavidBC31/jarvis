@@ -72,7 +72,20 @@ En production, `npm run build` génère `frontend/dist`, servi directement par l
 - ✅ Agrégateur FastAPI : `/api/health`, `/api/snapshot`, hub WebSocket `/ws` (snapshot d'amorçage + diffusion périodique).
 - ✅ SPA : header + logo animé, grille 16:9, 4 panneaux câblés au store (Zustand) via WebSocket avec reconnexion exponentielle, footer (horloge live, uptime, santé Mac Studio, activity stream).
 - ✅ **Panneau Projets (P2) — source gérée à la main** : fichier `backend/data/projects.json` (édition directe ou via `GET`/`PUT /api/projects`), validé, normalisé, surveillé (watcher → `panel.update` temps réel).
-- ⏳ Données des autres panneaux encore **simulées** — connecteurs Everping (P1), Monitoring (P3), service RAG (P4) à venir. Trello (P2) possible en complément du mode manuel.
+- ✅ **Panneau Jarvis (P4) — RAG texte** : base documentaire `backend/data/knowledge/*.md`, récupération TF-IDF (pur Python), réponse via Claude `claude-opus-4-8` si `ANTHROPIC_API_KEY` est défini (sinon mode *stub* hors-ligne). Saisie dans le panneau → `rag.event` temps réel (contexte + réponse en streaming). Endpoints `POST /api/rag/ask` et `POST /api/rag/reindex`.
+- ⏳ À venir : connecteurs Everping (P1) et Monitoring (P3) ; **voix** du panneau RAG (STT Whisper + TTS + orbe réactif). Trello (P2) possible en complément du mode manuel.
+
+### Activer Claude pour le RAG (P4)
+
+Par défaut, le RAG répond en mode *stub* (à partir du passage trouvé), ce qui fonctionne sans clé.
+Pour des réponses rédigées par Claude :
+
+```bash
+export ANTHROPIC_API_KEY=sk-ant-...   # avant de lancer ./run.sh
+```
+
+Ajouter / modifier des documents : déposer des fichiers `.md` dans `backend/data/knowledge/`
+(en-tête optionnel `equipment` / `procedure` entre `---`), puis `curl -X POST http://localhost:8000/api/rag/reindex`.
 
 ### Gérer les projets (P2) à la main
 
