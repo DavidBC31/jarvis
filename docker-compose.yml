@@ -22,6 +22,12 @@ services:
       UPTIME_KUMA_API_KEY: ${UPTIME_KUMA_API_KEY:-}
       # … ou via une page de statut publique :
       UPTIME_KUMA_STATUS_SLUG: ${UPTIME_KUMA_STATUS_SLUG:-}
+    volumes:
+      # Persistance des données éditables (projets, supervision, base docs).
+      # Sans ce montage, les modifs faites via l'admin sont DANS l'image et
+      # donc écrasées à chaque `docker compose up --build`. Le montage relie le
+      # dossier de l'hôte : les modifs survivent aux rebuilds et restent visibles.
+      - ./backend/data:/app/backend/data
     restart: unless-stopped
 
   # Tunnel Cloudflare — n'est lancé qu'avec le profil "tunnel".

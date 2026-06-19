@@ -164,6 +164,8 @@ export function JarvisPanel() {
               className="flex gap-2"
             >
               <input
+                id="jarvis-question"
+                name="jarvis-question"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 disabled={busy}
