@@ -91,8 +91,14 @@ export function JarvisPanel() {
               <button
                 type="button"
                 onClick={onMic}
-                disabled={!voice.sttSupported || busy}
-                title={voice.sttSupported ? "Parler à Jarvis" : "Reconnaissance vocale indisponible"}
+                disabled={!voice.sttSupported || busy || wake}
+                title={
+                  !voice.sttSupported
+                    ? "Reconnaissance vocale indisponible"
+                    : wake
+                      ? "« Hey Jarvis » est actif — parle directement, ou désactive-le pour le micro manuel"
+                      : "Parler à Jarvis"
+                }
                 className="disabled:opacity-40"
                 style={{ color: voice.listening ? "var(--neon-cyan)" : undefined }}
               >
