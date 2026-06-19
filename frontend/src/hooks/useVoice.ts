@@ -83,19 +83,33 @@ export function useVoice(lang = "fr-FR"): VoiceApi {
       rec.lang = lang;
       rec.continuous = false;
       rec.interimResults = false;
+      // Suivi de session : distingue « rien capté » d'une vraie erreur.
+      let gotResult = false;
+      let errored = false;
       rec.onresult = (e) => {
         const transcript = e.results[0]?.[0]?.transcript ?? "";
-        if (transcript) onResult(transcript.trim());
+        if (transcript) {
+          gotResult = true;
+          onResult(transcript.trim());
+        }
       };
       rec.onerror = (e) => {
         const code = (e && e.error) || "unknown";
+        errored = true;
         // eslint-disable-next-line no-console
         console.warn("[voice] erreur reconnaissance:", code);
         const msg = errorMessage(code);
         if (msg) setError(msg);
         setListening(false);
       };
-      rec.onend = () => setListening(false);
+      rec.onend = () => {
+        setListening(false);
+        // START suivi de END sans résultat ni erreur = audio silencieux : sur un
+        // poste sans micro (ex. Mac Studio), Chrome « ouvre » une entrée vide.
+        if (!gotResult && !errored) {
+          setError("Aucune parole captée. Vérifie qu'un micro est branché et non coupé (le Mac Studio n'a pas de micro intégré).");
+        }
+      };
       recognitionRef.current = rec;
       setError(null);
       setListening(true);
