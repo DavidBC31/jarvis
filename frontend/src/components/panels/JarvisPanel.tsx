@@ -59,10 +59,18 @@ export function JarvisPanel() {
       return;
     }
     voice.cancelSpeak();
-    voice.startListening((transcript) => {
-      setInput(transcript);
-      void submit(transcript);
-    });
+    // Si "Hey Jarvis" est actif, on le pause le temps de l'écoute manuelle
+    // (Chrome n'autorise qu'une reconnaissance à la fois).
+    const wasWake = wake;
+    if (wasWake) setWake(false);
+    // Délai court pour laisser la reconnaissance wake word s'arrêter.
+    setTimeout(() => {
+      voice.startListening((transcript) => {
+        setInput(transcript);
+        void submit(transcript);
+        if (wasWake) setWake(true); // remet Hey Jarvis actif après
+      });
+    }, 250);
   };
 
   return (
@@ -91,14 +99,8 @@ export function JarvisPanel() {
               <button
                 type="button"
                 onClick={onMic}
-                disabled={!voice.sttSupported || busy || wake}
-                title={
-                  !voice.sttSupported
-                    ? "Reconnaissance vocale indisponible"
-                    : wake
-                      ? "« Hey Jarvis » est actif — parle directement, ou désactive-le pour le micro manuel"
-                      : "Parler à Jarvis"
-                }
+                disabled={!voice.sttSupported || busy}
+                title={voice.sttSupported ? "Parler à Jarvis" : "Reconnaissance vocale indisponible"}
                 className="disabled:opacity-40"
                 style={{ color: voice.listening ? "var(--neon-cyan)" : undefined }}
               >
