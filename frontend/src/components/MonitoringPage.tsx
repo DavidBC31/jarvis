@@ -12,13 +12,10 @@ export function MonitoringPage() {
 
   return (
     <div className="h-full w-full p-6 overflow-auto">
-      <div className="flex items-center justify-between mb-4">
+      <div className="mb-4">
         <h1 className="font-display text-xl tracking-[0.25em] neon-text">
           SUPERVISION · TOUS LES SERVICES
         </h1>
-        <a href="#" className="text-xs tracking-widest text-neon-cyan">
-          ← TABLEAU DE BORD
-        </a>
       </div>
 
       <div className="flex items-center gap-3 mb-4">
