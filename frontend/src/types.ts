@@ -31,7 +31,7 @@ export interface TicketsPanel extends PanelMeta {
   total: number;
 }
 
-export type KeyStatus = "on_track" | "at_risk" | "critical";
+export type KeyStatus = "on_track" | "at_risk" | "critical" | "done" | "paused";
 
 export interface Project {
   id: string;

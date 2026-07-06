@@ -18,12 +18,12 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, ValidationError
 
-KeyStatus = Literal["on_track", "at_risk", "critical"]
+KeyStatus = Literal["on_track", "at_risk", "critical", "done", "paused"]
 
 DATA_FILE = Path(__file__).resolve().parents[2] / "data" / "projects.json"
 
 # Ordre de priorité pour le tri (le plus urgent en tête).
-_PRIORITY = {"critical": 0, "at_risk": 1, "on_track": 2}
+_PRIORITY = {"critical": 0, "at_risk": 1, "on_track": 2, "paused": 3, "done": 4}
 
 _last_mtime: float | None = None
 _last_good: list[dict] | None = None  # dernier jeu de projets normalisé valide

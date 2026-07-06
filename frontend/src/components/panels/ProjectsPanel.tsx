@@ -2,10 +2,12 @@ import { Panel } from "../Panel";
 import { useDashboard } from "../../store";
 import type { KeyStatus, Project } from "../../types";
 
-const PRIORITY: Record<KeyStatus, { label: string; color: string; rank: number }> = {
-  critical: { label: "Critique", color: "var(--status-alert)", rank: 0 },
-  at_risk: { label: "À risque", color: "var(--status-warn)", rank: 1 },
-  on_track: { label: "Sur les rails", color: "var(--status-ok)", rank: 2 },
+const PRIORITY: Record<KeyStatus, { label: string; color: string; rank: number; dim?: boolean }> = {
+  critical: { label: "Critique",       color: "var(--status-alert)",    rank: 0 },
+  at_risk:  { label: "À risque",       color: "var(--status-warn)",     rank: 1 },
+  on_track: { label: "Sur les rails",  color: "var(--status-ok)",       rank: 2 },
+  paused:   { label: "En pause",       color: "var(--text-muted, #6b7280)", rank: 3, dim: true },
+  done:     { label: "Terminé",        color: "var(--neon-cyan)",       rank: 4, dim: true },
 };
 
 export function ProjectsPanel() {
@@ -44,7 +46,10 @@ export function ProjectsPanel() {
 function Row({ project: p, showOwner }: { project: Project; showOwner: boolean }) {
   const prio = PRIORITY[p.keyStatus];
   return (
-    <li className="flex items-center gap-2.5 py-1.5 pl-2 border-l-2" style={{ borderColor: prio.color }}>
+    <li
+      className="flex items-center gap-2.5 py-1.5 pl-2 border-l-2"
+      style={{ borderColor: prio.color, opacity: prio.dim ? 0.5 : 1 }}
+    >
       <span
         className="font-display tracking-wider shrink-0 w-16 truncate"
         style={{ color: "var(--neon-cyan)" }}
@@ -70,18 +75,20 @@ function Row({ project: p, showOwner }: { project: Project; showOwner: boolean }
         )}
       </div>
 
-      {/* Avancement */}
-      <div className="w-24 shrink-0 h-1.5 rounded bg-white/10 overflow-hidden">
-        <div
-          className="h-full rounded"
-          style={{
-            width: `${p.progress}%`,
-            background: prio.color,
-            boxShadow: `0 0 6px ${prio.color}`,
-          }}
-        />
-      </div>
-      <span className="w-9 text-right tabular-nums shrink-0">{p.progress}%</span>
+      {/* Avancement — masqué pour les projets terminés (toujours 100 %) */}
+      {p.keyStatus !== "done" ? (
+        <>
+          <div className="w-24 shrink-0 h-1.5 rounded bg-white/10 overflow-hidden">
+            <div
+              className="h-full rounded"
+              style={{ width: `${p.progress}%`, background: prio.color, boxShadow: `0 0 6px ${prio.color}` }}
+            />
+          </div>
+          <span className="w-9 text-right tabular-nums shrink-0">{p.progress}%</span>
+        </>
+      ) : (
+        <span className="w-[136px] text-right tabular-nums shrink-0" style={{ color: prio.color }}>✓ Terminé</span>
+      )}
     </li>
   );
 }

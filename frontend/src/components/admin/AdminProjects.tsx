@@ -4,11 +4,13 @@ import type { KeyStatus, Project } from "../../types";
 // Ligne éditable : mêmes champs que ProjectInput côté backend (overdue est calculé).
 type Row = Pick<Project, "id" | "name" | "owner" | "dueDate" | "keyStatus" | "progress">;
 
-const KEY_STATUS: KeyStatus[] = ["on_track", "at_risk", "critical"];
+const KEY_STATUS: KeyStatus[] = ["on_track", "at_risk", "critical", "paused", "done"];
 const KEY_LABEL: Record<KeyStatus, string> = {
   on_track: "Sur les rails",
   at_risk: "À risque",
   critical: "Critique",
+  paused: "En pause",
+  done: "Terminé",
 };
 
 const emptyRow = (): Row => ({
