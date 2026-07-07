@@ -4,31 +4,34 @@ interface PanelProps {
   title: string;
   subtitle?: string;
   stale?: boolean;
-  accent?: string; // couleur de liseré/halo (ex. alerte) — défaut néon cyan
+  accent?: string;
   children: ReactNode;
   className?: string;
 }
 
-// Coque de panneau HUD : titre, liseré néon, indicateur "stale".
 export function Panel({ title, subtitle, stale, accent, children, className }: PanelProps) {
-  const border = accent ?? "var(--neon-cyan-dim, rgba(64,224,255,0.25))";
+  const color = accent ?? "var(--neon-cyan)";
+  const dim   = accent ?? "var(--neon-cyan-dim)";
   return (
     <section
-      className={`rounded-md flex flex-col min-h-0 ${className ?? ""}`}
+      className={`rounded-2xl flex flex-col min-h-0 ${className ?? ""}`}
       style={{
         background: "var(--bg-panel)",
         opacity: stale ? 0.55 : 1,
-        border: `1px solid ${accent ?? "var(--neon-cyan)"}`,
+        border: `1px solid ${dim}`,
         boxShadow: accent
-          ? `0 0 0 1px ${accent}, 0 0 18px ${accent}55, inset 0 0 24px rgba(0,0,0,0.35)`
-          : "0 0 0 1px rgba(0,0,0,0.4), inset 0 0 24px rgba(0,0,0,0.35)",
+          ? `0 0 0 1px ${accent}40, 0 0 24px ${accent}30, inset 0 0 30px rgba(0,0,0,0.4)`
+          : "0 0 0 1px rgba(0,0,0,0.5), 0 4px 24px rgba(139,92,246,0.08), inset 0 0 30px rgba(0,0,0,0.4)",
       }}
     >
       <div
-        className="flex items-baseline justify-between gap-2 px-3 py-2 shrink-0 border-b"
-        style={{ borderColor: border }}
+        className="flex items-baseline justify-between gap-2 px-4 py-3 shrink-0 border-b"
+        style={{ borderColor: dim }}
       >
-        <h2 className="font-display text-sm tracking-[0.22em] truncate" style={{ color: accent ?? "var(--neon-cyan)" }}>
+        <h2
+          className="font-display text-sm tracking-[0.22em] truncate"
+          style={{ color }}
+        >
           {title}
         </h2>
         <div className="flex items-center gap-2 shrink-0">
@@ -40,7 +43,7 @@ export function Panel({ title, subtitle, stale, accent, children, className }: P
           )}
         </div>
       </div>
-      <div className="flex-1 min-h-0 overflow-hidden p-3">{children}</div>
+      <div className="flex-1 min-h-0 overflow-hidden p-4">{children}</div>
     </section>
   );
 }
