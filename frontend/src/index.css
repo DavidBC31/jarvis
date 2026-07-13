@@ -49,3 +49,24 @@ body {
 .animate-fade-in {
   animation: fade-in-up 0.25s ease-out;
 }
+
+@keyframes float-soft {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-8px); }
+}
+.float-soft { animation: float-soft 7s ease-in-out infinite; }
+
+@keyframes pulse-soft {
+  0%, 100% { opacity: 0.4; }
+  50%      { opacity: 1; }
+}
+.pulse-soft { animation: pulse-soft 3s ease-in-out infinite; }
+
+/* Rotations des anneaux orbitaux (autour du centre du viewBox) */
+.spin-40, .spin-28-rev, .spin-60 {
+  transform-box: view-box;
+  transform-origin: 160px 160px;
+}
+.spin-40     { animation: orbit 40s linear infinite; }
+.spin-28-rev { animation: orbit 28s linear infinite reverse; }
+.spin-60     { animation: orbit 60s linear infinite; }
