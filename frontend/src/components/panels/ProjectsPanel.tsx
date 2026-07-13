@@ -12,82 +12,75 @@ const STATUS: Record<KeyStatus, { label: string; color: string; muted?: boolean 
   done:     { label: "Terminé",   color: "#38bdf8", muted: true },
 };
 
-// ── Carte projet — le NOM est la vedette ──────────────────────────────────────
+// ── Ligne projet actif — priorité · nom · avancement ──────────────────────────
 
-function Card({ project: p }: { project: Project }) {
+function Row({ project: p, rank }: { project: Project; rank: number }) {
   const s = STATUS[p.keyStatus];
-  const ranked = p.sortOrder < 99;
-  const isDone = p.keyStatus === "done";
+  const pinned = p.sortOrder < 99;
 
   return (
     <div
-      className="rounded-2xl flex flex-col gap-5 px-7 py-6 transition-all duration-200"
-      style={{
-        background: "rgba(255,255,255,0.022)",
-        border: "1px solid rgba(255,255,255,0.05)",
-        opacity: s.muted ? 0.55 : 1,
-      }}
-      onMouseEnter={e => {
-        e.currentTarget.style.background = "rgba(255,255,255,0.045)";
-        e.currentTarget.style.borderColor = s.color + "45";
-      }}
-      onMouseLeave={e => {
-        e.currentTarget.style.background = "rgba(255,255,255,0.022)";
-        e.currentTarget.style.borderColor = "rgba(255,255,255,0.05)";
-      }}
+      className="grid items-center gap-6 px-4 rounded-xl transition-colors duration-150"
+      style={{ gridTemplateColumns: "3rem minmax(0,1fr) 13rem 4rem", minHeight: 56 }}
+      onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.035)")}
+      onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
     >
-      {/* Ligne haute : rang + matricule + statut */}
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2.5">
-          {ranked && (
-            <span className="text-[11px] font-semibold tabular-nums px-2 py-0.5 rounded-md"
-              style={{ color: s.color, background: s.color + "16" }}>
-              #{p.sortOrder}
-            </span>
-          )}
-          <span className="text-[11px] font-mono tracking-wider" style={{ color: "var(--text-muted)" }}>
-            {p.id}
-          </span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <span className="w-1.5 h-1.5 rounded-full"
-            style={{ background: s.color, boxShadow: s.muted ? "none" : `0 0 6px ${s.color}` }} />
-          <span className="text-[11px]" style={{ color: s.color }}>{s.label}</span>
-        </div>
+      {/* Priorité (rang) */}
+      <div className="flex items-center justify-center">
+        <span
+          className="text-sm font-semibold tabular-nums w-9 h-7 flex items-center justify-center rounded-lg"
+          style={
+            pinned
+              ? { color: "var(--neon-cyan)", background: "rgba(56,189,248,0.12)" }
+              : { color: "var(--text-muted)" }
+          }
+        >
+          {String(rank).padStart(2, "0")}
+        </span>
       </div>
 
-      {/* NOM — grand et lisible */}
-      <p className="text-[1.7rem] font-normal leading-[1.15] tracking-tight line-clamp-2"
-        style={{ color: "var(--text-primary)" }}
-        title={p.name}>
-        {p.name}
-      </p>
+      {/* Nom (+ matricule discret) */}
+      <div className="min-w-0 flex items-baseline gap-3">
+        <span className="w-1.5 h-1.5 rounded-full shrink-0 self-center"
+          style={{ background: s.color, boxShadow: `0 0 6px ${s.color}` }} />
+        <span className="truncate text-[19px] font-medium leading-tight"
+          style={{ color: "var(--text-primary)" }} title={p.name}>
+          {p.name}
+        </span>
+        <span className="text-[10px] font-mono tracking-wider shrink-0" style={{ color: "var(--text-muted)" }}>
+          {p.id}
+        </span>
+      </div>
 
-      {/* Avancement */}
-      {isDone ? (
-        <div className="flex items-center justify-between">
-          <span className="text-xs" style={{ color: "var(--text-muted)" }}>{p.owner}</span>
-          <span className="text-base font-medium" style={{ color: s.color }}>✓ Terminé</span>
-        </div>
-      ) : (
-        <div className="space-y-2.5">
-          <div className="flex items-baseline justify-between">
-            <span className="text-xs" style={{ color: "var(--text-muted)" }}>{p.owner}</span>
-            <span className="text-[1.9rem] font-extralight tabular-nums leading-none" style={{ color: s.color }}>
-              {p.progress}<span className="text-base font-light opacity-60">%</span>
-            </span>
-          </div>
-          <div className="h-1 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.06)" }}>
-            <div className="h-full rounded-full transition-all duration-500"
-              style={{
-                width: `${p.progress}%`,
-                background: s.color,
-                boxShadow: p.progress > 0 ? `0 0 8px ${s.color}60` : "none",
-              }} />
-          </div>
-        </div>
-      )}
+      {/* Barre d'avancement */}
+      <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.06)" }}>
+        <div className="h-full rounded-full transition-all duration-500"
+          style={{
+            width: `${p.progress}%`,
+            background: s.color,
+            boxShadow: p.progress > 0 ? `0 0 8px ${s.color}55` : "none",
+          }} />
+      </div>
+
+      {/* Taux */}
+      <span className="text-xl font-extralight tabular-nums text-right" style={{ color: s.color }}>
+        {p.progress}<span className="text-xs font-light opacity-60">%</span>
+      </span>
     </div>
+  );
+}
+
+// ── Puce projet inactif ───────────────────────────────────────────────────────
+
+function Chip({ project: p }: { project: Project }) {
+  const s = STATUS[p.keyStatus];
+  return (
+    <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs max-w-[15rem]"
+      style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", color: "var(--text-muted)" }}>
+      <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: s.color }} />
+      <span className="truncate" title={p.name} style={{ color: "var(--text-primary)", opacity: 0.7 }}>{p.name}</span>
+      <span style={{ color: s.color, opacity: 0.8 }}>{s.label}</span>
+    </span>
   );
 }
 
@@ -95,7 +88,7 @@ function Card({ project: p }: { project: Project }) {
 
 function SectionLabel({ label, count }: { label: string; count: number }) {
   return (
-    <div className="flex items-center gap-3 mb-4">
+    <div className="flex items-center gap-3 mb-3">
       <span className="text-[11px] tracking-[0.2em] uppercase font-medium" style={{ color: "var(--text-muted)" }}>
         {label}
       </span>
@@ -125,13 +118,10 @@ export function ProjectsPanel() {
   const all   = panel?.projects ?? [];
 
   const total  = all.length;
-  const active = all.filter(p => p.keyStatus === "on_track").length;
+  const active = all.filter(p => p.keyStatus !== "done" && p.keyStatus !== "paused");
   const atRisk = all.filter(p => p.keyStatus === "at_risk" || p.keyStatus === "critical").length;
   const paused = all.filter(p => p.keyStatus === "paused").length;
   const done   = all.filter(p => p.keyStatus === "done").length;
-
-  const pinned   = all.filter(p => p.sortOrder < 99 && p.keyStatus !== "done" && p.keyStatus !== "paused");
-  const running  = all.filter(p => p.sortOrder >= 99 && p.keyStatus !== "done" && p.keyStatus !== "paused");
   const inactive = all.filter(p => p.keyStatus === "done" || p.keyStatus === "paused");
 
   return (
@@ -155,7 +145,7 @@ export function ProjectsPanel() {
         </div>
 
         <div className="space-y-4">
-          <KpiRow label="En cours" value={active} color="var(--status-ok)" />
+          <KpiRow label="Actifs"   value={active.length} color="var(--status-ok)" />
           <KpiRow label="À risque" value={atRisk} color={atRisk ? "var(--status-warn)" : "var(--text-muted)"} />
           <KpiRow label="En pause" value={paused} color={paused ? "var(--status-new)" : "var(--text-muted)"} />
           <KpiRow label="Terminés" value={done}   color={done ? "var(--neon-cyan)" : "var(--text-muted)"} />
@@ -173,39 +163,28 @@ export function ProjectsPanel() {
           Chargement…
         </div>
       ) : (
-        <div className="flex-1 min-h-0 overflow-auto px-9 py-9 space-y-9 animate-fade-in">
+        <div className="flex-1 min-h-0 overflow-auto px-8 py-8 flex flex-col animate-fade-in">
 
-          {pinned.length > 0 && (
-            <div>
-              <SectionLabel label="Prioritaires" count={pinned.length} />
-              <div className="grid grid-cols-2 gap-5">
-                {pinned.map(p => <Card key={p.id} project={p} />)}
-              </div>
-            </div>
-          )}
+          {/* Liste classée par priorité */}
+          <SectionLabel label="Par priorité" count={active.length} />
+          <div className="flex flex-col">
+            {active.map((p, i) => <Row key={p.id} project={p} rank={i + 1} />)}
+          </div>
 
-          {running.length > 0 && (
-            <div>
-              {pinned.length > 0 && <SectionLabel label="En cours" count={running.length} />}
-              <div className="grid grid-cols-2 gap-5">
-                {running.map(p => <Card key={p.id} project={p} />)}
-              </div>
-            </div>
-          )}
-
-          {inactive.length > 0 && (
-            <div>
-              <SectionLabel label="Terminés & en pause" count={inactive.length} />
-              <div className="grid grid-cols-2 gap-5">
-                {inactive.map(p => <Card key={p.id} project={p} />)}
-              </div>
-            </div>
-          )}
-
-          {total === 0 && (
-            <p className="text-center py-12 text-sm" style={{ color: "var(--text-muted)" }}>
-              Aucun projet à afficher.
+          {active.length === 0 && (
+            <p className="text-sm py-8" style={{ color: "var(--text-muted)" }}>
+              Aucun projet actif.
             </p>
+          )}
+
+          {/* Terminés & en pause — bande compacte */}
+          {inactive.length > 0 && (
+            <div className="mt-auto pt-7">
+              <SectionLabel label="Terminés & en pause" count={inactive.length} />
+              <div className="flex flex-wrap gap-2">
+                {inactive.map(p => <Chip key={p.id} project={p} />)}
+              </div>
+            </div>
           )}
         </div>
       )}
