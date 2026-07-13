@@ -32,12 +32,13 @@ _last_good: list[dict] | None = None  # dernier jeu de projets normalisé valide
 class ProjectInput(BaseModel):
     """Forme éditée à la main / reçue par l'API (champs minimaux)."""
 
-    id: str = Field(min_length=1)  # matricule (ex. SI-PRO3)
-    name: str = Field(min_length=1)  # intitulé du projet
-    owner: str = ""  # responsable
-    dueDate: str | None = None  # ISO date "YYYY-MM-DD" (optionnel)
+    id: str = Field(min_length=1)
+    name: str = Field(min_length=1)
+    owner: str = ""
+    dueDate: str | None = None
     keyStatus: KeyStatus = "on_track"
     progress: int = Field(default=0, ge=0, le=100)
+    sortOrder: int = Field(default=99, ge=0, le=999)  # priorité explicite : 1 = top, 99 = non classé
 
     def parsed_due(self) -> date | None:
         return date.fromisoformat(self.dueDate) if self.dueDate else None
@@ -68,10 +69,11 @@ def _normalize(items: list[ProjectInput]) -> list[dict]:
                 "keyStatus": p.keyStatus,
                 "progress": p.progress,
                 "overdue": overdue,
+                "sortOrder": p.sortOrder,
             }
         )
-    # Tri : priorité (critique d'abord) puis échéance (sans date en dernier).
-    projects.sort(key=lambda x: (_PRIORITY[x["keyStatus"]], x["dueDate"] or "9999-12-31"))
+    # Tri : ordre explicite → gravité → avancement décroissant.
+    projects.sort(key=lambda x: (x["sortOrder"], _PRIORITY[x["keyStatus"]], -x["progress"]))
     return projects
 
 

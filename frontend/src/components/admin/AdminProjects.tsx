@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import type { KeyStatus, Project } from "../../types";
 
 // Ligne éditable : mêmes champs que ProjectInput côté backend (overdue est calculé).
-type Row = Pick<Project, "id" | "name" | "owner" | "dueDate" | "keyStatus" | "progress">;
+type Row = Pick<Project, "id" | "name" | "owner" | "dueDate" | "keyStatus" | "progress" | "sortOrder">;
 
 const KEY_STATUS: KeyStatus[] = ["on_track", "at_risk", "critical", "paused", "done"];
 const KEY_LABEL: Record<KeyStatus, string> = {
@@ -20,6 +20,7 @@ const emptyRow = (): Row => ({
   dueDate: "",
   keyStatus: "on_track",
   progress: 0,
+  sortOrder: 99,
 });
 
 export function AdminProjects() {
@@ -57,6 +58,7 @@ export function AdminProjects() {
           dueDate: p.dueDate,
           keyStatus: p.keyStatus,
           progress: p.progress,
+          sortOrder: p.sortOrder ?? 99,
         })),
       );
       setMsg({ kind: "ok", text: "Enregistré — diffusé à l'écran." });
@@ -90,6 +92,7 @@ export function AdminProjects() {
                 <th className="py-2 pr-2">Échéance</th>
                 <th className="py-2 pr-2">Statut</th>
                 <th className="py-2 pr-2">Avancement</th>
+                <th className="py-2 pr-2" title="Ordre d'affichage (1 = prioritaire, 99 = non classé)">Priorité #</th>
                 <th className="py-2"></th>
               </tr>
             </thead>
@@ -150,6 +153,17 @@ export function AdminProjects() {
                       }
                     />
                     <span className="ml-1 text-text-muted">%</span>
+                  </td>
+                  <td className="py-1 pr-2">
+                    <input
+                      type="number"
+                      min={1}
+                      max={999}
+                      className="bg-transparent neon-border rounded px-2 py-1 w-16 text-center"
+                      value={r.sortOrder}
+                      title="1 = prioritaire, 99 = non classé"
+                      onChange={(e) => update(i, { sortOrder: Number(e.target.value) })}
+                    />
                   </td>
                   <td className="py-1">
                     <button

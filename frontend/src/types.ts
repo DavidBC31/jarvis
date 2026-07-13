@@ -41,6 +41,7 @@ export interface Project {
   keyStatus: KeyStatus;
   progress: number;
   overdue: boolean;
+  sortOrder: number; // 1 = top priorité, 99 = non classé
 }
 
 export interface ProjectsPanel extends PanelMeta {
