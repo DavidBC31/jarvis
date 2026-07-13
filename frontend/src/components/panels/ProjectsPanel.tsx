@@ -1,209 +1,219 @@
 import { useDashboard } from "../../store";
 import type { KeyStatus, Project } from "../../types";
 
-// ── Palette ──────────────────────────────────────────────────────────────────
+// ── Palette statuts ───────────────────────────────────────────────────────────
+// Une seule couleur par statut, utilisée de façon très sobre.
 
-const PRIORITY: Record<KeyStatus, { label: string; color: string; bg: string; rank: number; dim?: boolean }> = {
-  critical: { label: "Critique",   color: "#f87171", bg: "rgba(248,113,113,0.08)", rank: 0 },
-  at_risk:  { label: "À risque",   color: "#f59e0b", bg: "rgba(245,158,11,0.08)",  rank: 1 },
-  on_track: { label: "En cours",   color: "#10b981", bg: "rgba(16,185,129,0.07)",  rank: 2 },
-  paused:   { label: "En pause",   color: "#7a6e9e", bg: "rgba(122,110,158,0.06)", rank: 3, dim: true },
-  done:     { label: "Terminé",    color: "#a78bfa", bg: "rgba(167,139,250,0.07)", rank: 4, dim: true },
+const STATUS: Record<KeyStatus, { label: string; color: string; rank: number; muted?: boolean }> = {
+  critical: { label: "Critique",  color: "#f87171", rank: 0 },
+  at_risk:  { label: "À risque",  color: "#fbbf24", rank: 1 },
+  on_track: { label: "En cours",  color: "#34d399", rank: 2 },
+  paused:   { label: "En pause",  color: "#5a5680", rank: 3, muted: true },
+  done:     { label: "Terminé",   color: "#818cf8", rank: 4, muted: true },
 };
 
 // ── Tuile stat ────────────────────────────────────────────────────────────────
 
-function StatTile({ label, value, color }: { label: string; value: number; color?: string }) {
+function Stat({ label, value, color }: { label: string; value: number; color?: string }) {
   return (
-    <div
-      className="rounded-xl px-4 py-3 flex flex-col gap-1"
-      style={{ background: "rgba(139,92,246,0.05)", border: "1px solid rgba(139,92,246,0.13)" }}
-    >
-      <span className="text-3xl font-bold tabular-nums leading-none" style={{ color: color ?? "var(--neon-cyan)" }}>
+    <div className="flex flex-col gap-1.5 px-5 py-4 rounded-2xl"
+      style={{ background: "rgba(255,255,255,0.025)", border: "1px solid rgba(255,255,255,0.055)" }}>
+      <span className="text-4xl font-semibold tabular-nums leading-none"
+        style={{ color: color ?? "var(--neon-cyan)" }}>
         {value}
       </span>
-      <span className="text-[9px] tracking-[0.18em] text-text-muted uppercase">{label}</span>
+      <span className="text-[10px] tracking-widest uppercase" style={{ color: "var(--text-muted)" }}>
+        {label}
+      </span>
     </div>
   );
 }
 
 // ── Carte projet ──────────────────────────────────────────────────────────────
 
-function ProjectCard({ project: p }: { project: Project }) {
-  const prio = PRIORITY[p.keyStatus];
+function Card({ project: p }: { project: Project }) {
+  const s = STATUS[p.keyStatus];
   const ranked = p.sortOrder < 99;
   const isDone = p.keyStatus === "done";
 
   return (
     <div
-      className="rounded-2xl flex flex-col overflow-hidden transition-transform hover:scale-[1.01]"
+      className="rounded-2xl flex flex-col gap-4 px-5 py-5 transition-all duration-200"
       style={{
-        background: prio.bg,
-        border: `1px solid ${prio.color}30`,
-        opacity: prio.dim ? 0.6 : 1,
+        background: "rgba(255,255,255,0.025)",
+        border: "1px solid rgba(255,255,255,0.055)",
+        borderLeft: `3px solid ${s.color}`,
+        opacity: s.muted ? 0.55 : 1,
+        boxShadow: s.muted ? "none" : `0 4px 24px rgba(0,0,0,0.25)`,
       }}
+      onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.04)")}
+      onMouseLeave={e => (e.currentTarget.style.background = "rgba(255,255,255,0.025)")}
     >
-      {/* Bande colorée top */}
-      <div style={{ height: 3, background: `linear-gradient(90deg, ${prio.color}, ${prio.color}30)` }} />
-
-      <div className="px-4 py-3 flex flex-col gap-2.5 flex-1">
-        {/* Ligne 1 : rang + id + badge */}
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 min-w-0">
-            {ranked && (
-              <span
-                className="w-5 h-5 rounded-full text-[9px] font-bold flex items-center justify-center shrink-0"
-                style={{ background: prio.color + "30", color: prio.color, border: `1px solid ${prio.color}60` }}
-              >
-                {p.sortOrder}
-              </span>
-            )}
-            <span
-              className="text-[10px] font-display tracking-wider truncate"
-              style={{ color: "var(--neon-cyan)" }}
-            >
-              {p.id}
+      {/* Ligne 1 : rang + matricule */}
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          {ranked && (
+            <span className="text-[10px] font-bold tabular-nums px-1.5 py-0.5 rounded-md"
+              style={{ color: s.color, background: s.color + "18" }}>
+              #{p.sortOrder}
             </span>
-          </div>
-          <span
-            className="text-[9px] px-2 py-0.5 rounded-full shrink-0 whitespace-nowrap"
-            style={{ color: prio.color, background: prio.color + "20", border: `1px solid ${prio.color}44` }}
-          >
-            {prio.label}
+          )}
+          <span className="text-[11px] font-mono tracking-wider"
+            style={{ color: "var(--neon-cyan)", opacity: 0.8 }}>
+            {p.id}
           </span>
         </div>
-
-        {/* Nom du projet */}
-        <p
-          className="text-sm leading-snug flex-1 line-clamp-2"
-          style={{ color: "var(--text-primary)" }}
-          title={p.name}
-        >
-          {p.name}
-        </p>
-
-        {/* Barre de progression */}
-        {isDone ? (
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] text-text-muted">{p.owner}</span>
-            <span className="text-xs font-bold" style={{ color: prio.color }}>✓ 100 %</span>
-          </div>
-        ) : (
-          <div className="space-y-1.5">
-            <div className="h-2 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.08)" }}>
-              <div
-                className="h-full rounded-full transition-all"
-                style={{
-                  width: `${p.progress}%`,
-                  background: `linear-gradient(90deg, ${prio.color}70, ${prio.color})`,
-                  boxShadow: `0 0 8px ${prio.color}60`,
-                }}
-              />
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] text-text-muted truncate">{p.owner}</span>
-              <span className="text-sm font-bold tabular-nums" style={{ color: prio.color }}>
-                {p.progress} %
-              </span>
-            </div>
-          </div>
-        )}
+        {/* Point statut */}
+        <div className="flex items-center gap-1.5">
+          <span className="w-1.5 h-1.5 rounded-full"
+            style={{ background: s.color, boxShadow: `0 0 5px ${s.color}` }} />
+          <span className="text-[10px]" style={{ color: s.color }}>
+            {s.label}
+          </span>
+        </div>
       </div>
+
+      {/* Nom du projet */}
+      <p className="text-[13px] font-medium leading-snug line-clamp-2 flex-1"
+        style={{ color: "var(--text-primary)" }}
+        title={p.name}>
+        {p.name}
+      </p>
+
+      {/* Avancement */}
+      {isDone ? (
+        <div className="flex items-center justify-between">
+          <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>{p.owner}</span>
+          <span className="text-sm font-semibold" style={{ color: s.color }}>✓ Terminé</span>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>{p.owner}</span>
+            <span className="text-base font-bold tabular-nums" style={{ color: s.color }}>
+              {p.progress}%
+            </span>
+          </div>
+          <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.07)" }}>
+            <div
+              className="h-full rounded-full transition-all duration-500"
+              style={{
+                width: `${p.progress}%`,
+                background: `linear-gradient(90deg, ${s.color}70, ${s.color})`,
+                boxShadow: p.progress > 0 ? `0 0 8px ${s.color}50` : "none",
+              }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-// ── Panneau principal ─────────────────────────────────────────────────────────
+// ── Séparateur de section ─────────────────────────────────────────────────────
+
+function SectionLabel({ label, count }: { label: string; count: number }) {
+  return (
+    <div className="flex items-center gap-3 mt-2 mb-1">
+      <span className="text-[10px] tracking-widest font-medium" style={{ color: "var(--text-muted)" }}>
+        {label}
+      </span>
+      <span className="text-[10px] tabular-nums" style={{ color: "var(--text-muted)", opacity: 0.5 }}>
+        {count}
+      </span>
+      <div className="flex-1 h-px" style={{ background: "rgba(255,255,255,0.05)" }} />
+    </div>
+  );
+}
+
+// ── Panneau ───────────────────────────────────────────────────────────────────
 
 export function ProjectsPanel() {
   const panel = useDashboard((s) => s.state?.projects);
-  const projects = panel?.projects ?? [];
+  const all   = panel?.projects ?? [];
 
-  const total  = projects.length;
-  const active = projects.filter((p) => p.keyStatus === "on_track").length;
-  const atRisk = projects.filter((p) => p.keyStatus === "at_risk" || p.keyStatus === "critical").length;
-  const paused = projects.filter((p) => p.keyStatus === "paused").length;
-  const done   = projects.filter((p) => p.keyStatus === "done").length;
+  const total  = all.length;
+  const active = all.filter(p => p.keyStatus === "on_track").length;
+  const atRisk = all.filter(p => p.keyStatus === "at_risk" || p.keyStatus === "critical").length;
+  const paused = all.filter(p => p.keyStatus === "paused").length;
+  const done   = all.filter(p => p.keyStatus === "done").length;
 
-  // Séparation prioritaires (sortOrder < 99) / reste
-  const pinned = projects.filter((p) => p.sortOrder < 99 && p.keyStatus !== "done" && p.keyStatus !== "paused");
-  const rest   = projects.filter((p) => p.sortOrder >= 99 && p.keyStatus !== "done" && p.keyStatus !== "paused");
-  const inactive = projects.filter((p) => p.keyStatus === "done" || p.keyStatus === "paused");
+  const pinned   = all.filter(p => p.sortOrder < 99 && p.keyStatus !== "done" && p.keyStatus !== "paused");
+  const running  = all.filter(p => p.sortOrder >= 99 && p.keyStatus !== "done" && p.keyStatus !== "paused");
+  const inactive = all.filter(p => p.keyStatus === "done" || p.keyStatus === "paused");
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
 
       {/* En-tête */}
-      <div
-        className="px-6 py-3.5 shrink-0 flex items-center justify-between border-b"
-        style={{ borderColor: "rgba(139,92,246,0.15)" }}
-      >
-        <h1 className="font-display text-base tracking-[0.25em]" style={{ color: "var(--neon-cyan)" }}>
-          PROJETS SI
-        </h1>
+      <div className="px-7 pt-6 pb-5 shrink-0 flex items-end justify-between"
+        style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+        <div>
+          <p className="text-[10px] tracking-[0.25em] uppercase mb-1" style={{ color: "var(--text-muted)" }}>
+            Système d'information
+          </p>
+          <h1 className="text-xl font-semibold tracking-tight" style={{ color: "var(--neon-cyan)" }}>
+            Projets
+          </h1>
+        </div>
         {panel?.stale && (
-          <span className="text-[10px] tracking-widest text-status-warn">DONNÉES OBSOLÈTES</span>
+          <span className="text-[10px] tracking-widest" style={{ color: "var(--status-warn)" }}>
+            données obsolètes
+          </span>
         )}
       </div>
 
       {/* Tuiles stats */}
-      <div className="px-5 py-3 grid grid-cols-5 gap-2.5 shrink-0">
-        <StatTile label="Total"     value={total}  color="var(--neon-cyan)" />
-        <StatTile label="En cours"  value={active} color="#10b981" />
-        <StatTile label="À risque"  value={atRisk} color={atRisk ? "#f59e0b" : "var(--text-muted)"} />
-        <StatTile label="En pause"  value={paused} color={paused ? "#60a5fa" : "var(--text-muted)"} />
-        <StatTile label="Terminés"  value={done}   color={done   ? "#a78bfa" : "var(--text-muted)"} />
+      <div className="px-7 py-5 grid grid-cols-5 gap-3 shrink-0">
+        <Stat label="Total"    value={total}  color="var(--neon-cyan)" />
+        <Stat label="En cours" value={active} color="var(--status-ok)" />
+        <Stat label="À risque" value={atRisk} color={atRisk ? "var(--status-warn)" : "var(--text-muted)"} />
+        <Stat label="En pause" value={paused} color={paused ? "var(--status-new)"  : "var(--text-muted)"} />
+        <Stat label="Terminés" value={done}   color={done   ? "var(--neon-cyan)"   : "var(--text-muted)"} />
       </div>
 
       {/* Grille de cartes */}
       {!panel ? (
-        <div className="flex-1 flex items-center justify-center text-text-muted text-sm">Chargement…</div>
+        <div className="flex-1 flex items-center justify-center" style={{ color: "var(--text-muted)" }}>
+          Chargement…
+        </div>
       ) : (
-        <div className="flex-1 min-h-0 overflow-auto px-5 pb-5 space-y-4">
+        <div className="flex-1 min-h-0 overflow-auto px-7 pb-7 space-y-5 animate-fade-in">
 
           {/* Prioritaires */}
           {pinned.length > 0 && (
-            <section>
-              <div className="flex items-center gap-3 mb-2">
-                <span className="text-[10px] font-display tracking-[0.2em] text-status-warn">★ PRIORITAIRES</span>
-                <div className="flex-1 h-px bg-status-warn/20" />
+            <div>
+              <SectionLabel label="Prioritaires" count={pinned.length} />
+              <div className="grid grid-cols-3 gap-3 mt-2">
+                {pinned.map(p => <Card key={p.id} project={p} />)}
               </div>
-              <div className="grid grid-cols-4 gap-3">
-                {pinned.map((p) => <ProjectCard key={p.id} project={p} />)}
-              </div>
-            </section>
+            </div>
           )}
 
-          {/* Autres projets actifs */}
-          {rest.length > 0 && (
-            <section>
-              {pinned.length > 0 && (
-                <div className="flex items-center gap-3 mb-2">
-                  <span className="text-[10px] font-display tracking-[0.2em] text-text-muted">EN COURS</span>
-                  <div className="flex-1 h-px bg-white/8" />
-                </div>
-              )}
-              <div className="grid grid-cols-4 gap-3">
-                {rest.map((p) => <ProjectCard key={p.id} project={p} />)}
+          {/* En cours */}
+          {running.length > 0 && (
+            <div>
+              {pinned.length > 0 && <SectionLabel label="En cours" count={running.length} />}
+              <div className="grid grid-cols-3 gap-3 mt-2">
+                {running.map(p => <Card key={p.id} project={p} />)}
               </div>
-            </section>
+            </div>
           )}
 
           {/* Terminés & en pause */}
           {inactive.length > 0 && (
-            <section>
-              <div className="flex items-center gap-3 mb-2">
-                <span className="text-[10px] font-display tracking-[0.2em] text-text-muted">TERMINÉS & EN PAUSE</span>
-                <div className="flex-1 h-px bg-white/8" />
+            <div>
+              <SectionLabel label="Terminés & en pause" count={inactive.length} />
+              <div className="grid grid-cols-3 gap-3 mt-2">
+                {inactive.map(p => <Card key={p.id} project={p} />)}
               </div>
-              <div className="grid grid-cols-4 gap-3">
-                {inactive.map((p) => <ProjectCard key={p.id} project={p} />)}
-              </div>
-            </section>
+            </div>
           )}
 
           {total === 0 && (
-            <p className="text-center text-text-muted text-sm py-10">Aucun projet à afficher.</p>
+            <p className="text-center py-12 text-sm" style={{ color: "var(--text-muted)" }}>
+              Aucun projet à afficher.
+            </p>
           )}
         </div>
       )}

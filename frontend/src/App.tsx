@@ -17,23 +17,6 @@ function useHashRoute() {
   return route;
 }
 
-// Conteneur commun aux onglets : carte vitrée violette pleine hauteur.
-function TabCard({ children }: { children: React.ReactNode }) {
-  return (
-    <div
-      className="h-full rounded-2xl overflow-hidden"
-      style={{
-        background: "var(--bg-panel)",
-        border: "1px solid rgba(139,92,246,0.2)",
-        boxShadow:
-          "0 0 0 1px rgba(0,0,0,0.5), 0 8px 32px rgba(139,92,246,0.08), inset 0 0 40px rgba(0,0,0,0.45)",
-      }}
-    >
-      {children}
-    </div>
-  );
-}
-
 export function App() {
   const route = useHashRoute();
   const [tab, setTab] = useState<Tab>("ops");
@@ -42,13 +25,20 @@ export function App() {
   if (route === "admin") return <AdminProjects />;
 
   return (
-    <div className="h-full w-full flex flex-col gap-3 p-4">
+    <div className="h-full w-full flex flex-col">
       <Header tab={tab} onTab={setTab} />
 
-      <main className="flex-1 min-h-0">
-        <TabCard>
+      <main className="flex-1 min-h-0 p-4">
+        <div
+          className="h-full rounded-2xl overflow-hidden"
+          style={{
+            background: "rgba(255,255,255,0.018)",
+            border: "1px solid rgba(255,255,255,0.06)",
+            boxShadow: "0 0 0 1px rgba(0,0,0,0.4), 0 8px 40px rgba(0,0,0,0.5)",
+          }}
+        >
           {tab === "ops" ? <ProjectsPanel /> : <MonitoringPage />}
-        </TabCard>
+        </div>
       </main>
 
       <Footer />

@@ -1,18 +1,19 @@
-/* Tokens de design — style futuriste violet/indigo inspiré de la DA v2. */
+/* Tokens de design — "futuriste épuré" : quasi-noir, accents indigo, espaces aérés. */
 :root {
-  --bg-base:      #070916;
-  --bg-panel:     rgba(13, 9, 38, 0.75);
-  --panel-border: rgba(139, 92, 246, 0.22);
+  --bg-base:      #05060e;
+  --bg-panel:     rgba(14, 13, 28, 0.85);
+  --panel-border: rgba(255, 255, 255, 0.06);
 
-  /* Accent principal : violet */
-  --neon-cyan:     #a78bfa;          /* ancien cyan → violet-400 */
-  --neon-cyan-dim: #3b1f80;          /* violet profond pour les ombres/bordures */
+  /* Accent unique : indigo doux — utilisé avec parcimonie */
+  --neon-cyan:     #818cf8;             /* indigo-400 */
+  --neon-cyan-dim: rgba(99,102,241,0.14);
 
-  --text-primary: #ede9fe;
-  --text-muted:   #7a6e9e;
+  --text-primary: #edeaf8;
+  --text-muted:   #5a5680;
 
-  --status-ok:    #10b981;
-  --status-warn:  #f59e0b;
-  --status-new:   #60a5fa;
-  --status-alert: #f87171;
+  /* Statuts — nets mais pas agressifs */
+  --status-ok:    #34d399;   /* emerald */
+  --status-warn:  #fbbf24;   /* amber */
+  --status-new:   #60a5fa;   /* blue */
+  --status-alert: #f87171;   /* red */
 }
