@@ -5,6 +5,7 @@ export type PanelId = "tickets" | "projects" | "services" | "footer";
 export interface PanelMeta {
   updatedAt: string;
   stale: boolean;
+  source?: string;
   sourceError?: string;
 }
 

@@ -1,10 +1,11 @@
 import { Logo } from "./Logo";
 import { useDashboard } from "../store";
 
-export type Tab = "ops" | "supervision";
+export type Tab = "ops" | "support" | "supervision";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "ops",         label: "Opérations" },
+  { id: "support",     label: "Support" },
   { id: "supervision", label: "Supervision" },
 ];
 

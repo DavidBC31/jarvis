@@ -3,6 +3,7 @@ import { connectDashboard } from "./ws";
 import { Header, type Tab } from "./components/Header";
 import { Footer } from "./components/Footer";
 import { ProjectsPanel } from "./components/panels/ProjectsPanel";
+import { TicketsPanel } from "./components/panels/TicketsPanel";
 import { MonitoringPage } from "./components/MonitoringPage";
 import { JarvisFloat } from "./components/JarvisFloat";
 import { AdminProjects } from "./components/admin/AdminProjects";
@@ -37,7 +38,9 @@ export function App() {
             boxShadow: "0 0 0 1px rgba(0,0,0,0.4), 0 8px 40px rgba(0,0,0,0.5)",
           }}
         >
-          {tab === "ops" ? <ProjectsPanel /> : <MonitoringPage />}
+          {tab === "ops" ? <ProjectsPanel />
+            : tab === "support" ? <TicketsPanel />
+            : <MonitoringPage />}
         </div>
       </main>
 
