@@ -11,9 +11,17 @@ html, body, #root {
 body {
   background: var(--bg-base);
   color: var(--text-primary);
-  font-family: "Inter", "IBM Plex Sans", ui-sans-serif, sans-serif;
+  /* Rajdhani : sans techy semi-condensé, identité HUD */
+  font-family: "Rajdhani", "Inter", ui-sans-serif, sans-serif;
   overflow: hidden;
   -webkit-font-smoothing: antialiased;
+  letter-spacing: 0.01em;
+}
+
+/* Orbitron : chiffres & titres hero, look sci-fi */
+.font-hero {
+  font-family: "Orbitron", "Rajdhani", ui-sans-serif, sans-serif;
+  letter-spacing: 0.02em;
 }
 
 /* Lueur douce sur textes accent */

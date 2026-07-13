@@ -68,11 +68,11 @@ export function OrbitSphere({ count }: { count: number }) {
 
       {/* Total au centre */}
       <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-        <span className="text-[3.4rem] font-extralight leading-none tabular-nums neon-text"
+        <span className="font-hero text-[3rem] font-normal leading-none tabular-nums neon-text"
           style={{ color: "#eaf6ff" }}>
           {count}
         </span>
-        <span className="text-[10px] tracking-[0.32em] uppercase mt-1.5" style={{ color: "var(--text-muted)" }}>
+        <span className="text-[10px] tracking-[0.4em] uppercase mt-2" style={{ color: "var(--text-muted)" }}>
           projets
         </span>
       </div>

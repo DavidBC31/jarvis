@@ -31,10 +31,10 @@ export function Header({ tab, onTab }: HeaderProps) {
       <div className="flex items-center gap-3 shrink-0">
         <Logo />
         <div className="leading-tight">
-          <div className="text-sm font-semibold tracking-tight" style={{ color: "var(--text-primary)" }}>
-            Bleu Citron
+          <div className="font-hero text-sm font-semibold tracking-wide" style={{ color: "var(--text-primary)" }}>
+            BLEU CITRON
           </div>
-          <div className="text-[10px] tracking-wide" style={{ color: "var(--text-muted)" }}>
+          <div className="text-[10px] tracking-[0.28em] uppercase" style={{ color: "var(--text-muted)" }}>
             IT Center
           </div>
         </div>
@@ -49,7 +49,7 @@ export function Header({ tab, onTab }: HeaderProps) {
               key={t.id}
               type="button"
               onClick={() => onTab(t.id)}
-              className="px-4 py-2 rounded-xl text-sm font-medium transition-all duration-150"
+              className="px-4 py-2 rounded-xl text-xs font-semibold uppercase tracking-[0.18em] transition-all duration-150"
               style={{
                 color:      active ? "var(--neon-cyan)"   : "var(--text-muted)",
                 background: active ? "rgba(56,189,248,0.10)" : "transparent",

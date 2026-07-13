@@ -28,7 +28,7 @@ function Row({ project: p, rank }: { project: Project; rank: number }) {
       {/* Priorité (rang) */}
       <div className="flex items-center justify-center">
         <span
-          className="text-sm font-semibold tabular-nums w-9 h-7 flex items-center justify-center rounded-lg"
+          className="font-hero text-[13px] font-medium tabular-nums w-9 h-7 flex items-center justify-center rounded-lg"
           style={
             pinned
               ? { color: "var(--neon-cyan)", background: "rgba(56,189,248,0.12)" }

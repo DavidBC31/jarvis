@@ -48,7 +48,7 @@ export function Footer() {
             {footer.activityStream[0].label}
           </span>
         )}
-        <span className="font-mono tabular-nums" style={{ color: "var(--neon-cyan)", opacity: 0.7 }}>
+        <span className="font-hero tabular-nums tracking-wide" style={{ color: "var(--neon-cyan)", opacity: 0.75 }}>
           {fmt(now)}
         </span>
       </div>
