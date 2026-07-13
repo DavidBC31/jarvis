@@ -78,3 +78,10 @@ body {
 .spin-40     { animation: orbit 40s linear infinite; }
 .spin-28-rev { animation: orbit 28s linear infinite reverse; }
 .spin-60     { animation: orbit 60s linear infinite; }
+
+/* Rotation autour du centre propre de l'élément (viewBox 220) */
+.spin-c-60 {
+  animation: orbit 60s linear infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
