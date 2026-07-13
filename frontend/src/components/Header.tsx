@@ -52,7 +52,7 @@ export function Header({ tab, onTab }: HeaderProps) {
               className="px-4 py-2 rounded-xl text-sm font-medium transition-all duration-150"
               style={{
                 color:      active ? "var(--neon-cyan)"   : "var(--text-muted)",
-                background: active ? "rgba(129,140,248,0.10)" : "transparent",
+                background: active ? "rgba(56,189,248,0.10)" : "transparent",
               }}
             >
               {t.label}

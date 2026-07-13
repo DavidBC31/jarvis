@@ -1,15 +1,15 @@
-/* Tokens de design — "futuriste épuré" : quasi-noir, accents indigo, espaces aérés. */
+/* Tokens de design — "futuriste épuré" : quasi-noir bleuté, accent cyan, grands vides. */
 :root {
-  --bg-base:      #05060e;
-  --bg-panel:     rgba(14, 13, 28, 0.85);
+  --bg-base:      #050810;
+  --bg-panel:     rgba(12, 16, 28, 0.85);
   --panel-border: rgba(255, 255, 255, 0.06);
 
-  /* Accent unique : indigo doux — utilisé avec parcimonie */
-  --neon-cyan:     #818cf8;             /* indigo-400 */
-  --neon-cyan-dim: rgba(99,102,241,0.14);
+  /* Accent unique : cyan électrique — utilisé avec parcimonie */
+  --neon-cyan:     #38bdf8;             /* sky-400 */
+  --neon-cyan-dim: rgba(56,189,248,0.12);
 
-  --text-primary: #edeaf8;
-  --text-muted:   #5a5680;
+  --text-primary: #e8eef7;
+  --text-muted:   #55607a;
 
   /* Statuts — nets mais pas agressifs */
   --status-ok:    #34d399;   /* emerald */

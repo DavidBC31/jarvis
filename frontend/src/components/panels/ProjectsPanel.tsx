@@ -2,27 +2,26 @@ import { useDashboard } from "../../store";
 import type { KeyStatus, Project } from "../../types";
 
 // ── Palette statuts ───────────────────────────────────────────────────────────
-// Une seule couleur par statut, utilisée de façon très sobre.
+// Une seule couleur par statut, portée par le point + le pourcentage + la barre.
 
 const STATUS: Record<KeyStatus, { label: string; color: string; rank: number; muted?: boolean }> = {
   critical: { label: "Critique",  color: "#f87171", rank: 0 },
   at_risk:  { label: "À risque",  color: "#fbbf24", rank: 1 },
   on_track: { label: "En cours",  color: "#34d399", rank: 2 },
-  paused:   { label: "En pause",  color: "#5a5680", rank: 3, muted: true },
-  done:     { label: "Terminé",   color: "#818cf8", rank: 4, muted: true },
+  paused:   { label: "En pause",  color: "#55607a", rank: 3, muted: true },
+  done:     { label: "Terminé",   color: "#38bdf8", rank: 4, muted: true },
 };
 
-// ── Tuile stat ────────────────────────────────────────────────────────────────
+// ── KPI héroïque (sans cadre) ─────────────────────────────────────────────────
 
-function Stat({ label, value, color }: { label: string; value: number; color?: string }) {
+function Kpi({ label, value, color }: { label: string; value: number; color?: string }) {
   return (
-    <div className="flex flex-col gap-1.5 px-5 py-4 rounded-2xl"
-      style={{ background: "rgba(255,255,255,0.025)", border: "1px solid rgba(255,255,255,0.055)" }}>
-      <span className="text-4xl font-semibold tabular-nums leading-none"
+    <div className="flex flex-col gap-2">
+      <span className="text-5xl font-extralight tabular-nums leading-none"
         style={{ color: color ?? "var(--neon-cyan)" }}>
         {value}
       </span>
-      <span className="text-[10px] tracking-widest uppercase" style={{ color: "var(--text-muted)" }}>
+      <span className="text-[10px] tracking-[0.22em] uppercase" style={{ color: "var(--text-muted)" }}>
         {label}
       </span>
     </div>
@@ -38,35 +37,38 @@ function Card({ project: p }: { project: Project }) {
 
   return (
     <div
-      className="rounded-2xl flex flex-col gap-4 px-5 py-5 transition-all duration-200"
+      className="rounded-2xl flex flex-col gap-5 px-6 py-6 transition-all duration-200"
       style={{
-        background: "rgba(255,255,255,0.025)",
-        border: "1px solid rgba(255,255,255,0.055)",
-        borderLeft: `3px solid ${s.color}`,
-        opacity: s.muted ? 0.55 : 1,
-        boxShadow: s.muted ? "none" : `0 4px 24px rgba(0,0,0,0.25)`,
+        background: "rgba(255,255,255,0.02)",
+        border: "1px solid rgba(255,255,255,0.05)",
+        opacity: s.muted ? 0.5 : 1,
       }}
-      onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.04)")}
-      onMouseLeave={e => (e.currentTarget.style.background = "rgba(255,255,255,0.025)")}
+      onMouseEnter={e => {
+        e.currentTarget.style.background = "rgba(255,255,255,0.04)";
+        e.currentTarget.style.borderColor = s.color + "40";
+      }}
+      onMouseLeave={e => {
+        e.currentTarget.style.background = "rgba(255,255,255,0.02)";
+        e.currentTarget.style.borderColor = "rgba(255,255,255,0.05)";
+      }}
     >
-      {/* Ligne 1 : rang + matricule */}
+      {/* Ligne 1 : matricule + statut */}
       <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2.5">
           {ranked && (
-            <span className="text-[10px] font-bold tabular-nums px-1.5 py-0.5 rounded-md"
-              style={{ color: s.color, background: s.color + "18" }}>
+            <span className="text-[10px] font-semibold tabular-nums px-1.5 py-0.5 rounded-md"
+              style={{ color: s.color, background: s.color + "16" }}>
               #{p.sortOrder}
             </span>
           )}
           <span className="text-[11px] font-mono tracking-wider"
-            style={{ color: "var(--neon-cyan)", opacity: 0.8 }}>
+            style={{ color: "var(--text-muted)" }}>
             {p.id}
           </span>
         </div>
-        {/* Point statut */}
         <div className="flex items-center gap-1.5">
           <span className="w-1.5 h-1.5 rounded-full"
-            style={{ background: s.color, boxShadow: `0 0 5px ${s.color}` }} />
+            style={{ background: s.color, boxShadow: s.muted ? "none" : `0 0 6px ${s.color}` }} />
           <span className="text-[10px]" style={{ color: s.color }}>
             {s.label}
           </span>
@@ -74,7 +76,7 @@ function Card({ project: p }: { project: Project }) {
       </div>
 
       {/* Nom du projet */}
-      <p className="text-[13px] font-medium leading-snug line-clamp-2 flex-1"
+      <p className="text-[15px] font-normal leading-snug line-clamp-2 flex-1"
         style={{ color: "var(--text-primary)" }}
         title={p.name}>
         {p.name}
@@ -84,23 +86,23 @@ function Card({ project: p }: { project: Project }) {
       {isDone ? (
         <div className="flex items-center justify-between">
           <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>{p.owner}</span>
-          <span className="text-sm font-semibold" style={{ color: s.color }}>✓ Terminé</span>
+          <span className="text-sm font-medium" style={{ color: s.color }}>✓ Terminé</span>
         </div>
       ) : (
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
+        <div className="space-y-2.5">
+          <div className="flex items-baseline justify-between">
             <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>{p.owner}</span>
-            <span className="text-base font-bold tabular-nums" style={{ color: s.color }}>
-              {p.progress}%
+            <span className="text-2xl font-light tabular-nums leading-none" style={{ color: s.color }}>
+              {p.progress}<span className="text-sm font-light opacity-60">%</span>
             </span>
           </div>
-          <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.07)" }}>
+          <div className="h-1 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.06)" }}>
             <div
               className="h-full rounded-full transition-all duration-500"
               style={{
                 width: `${p.progress}%`,
-                background: `linear-gradient(90deg, ${s.color}70, ${s.color})`,
-                boxShadow: p.progress > 0 ? `0 0 8px ${s.color}50` : "none",
+                background: s.color,
+                boxShadow: p.progress > 0 ? `0 0 8px ${s.color}60` : "none",
               }}
             />
           </div>
@@ -114,8 +116,8 @@ function Card({ project: p }: { project: Project }) {
 
 function SectionLabel({ label, count }: { label: string; count: number }) {
   return (
-    <div className="flex items-center gap-3 mt-2 mb-1">
-      <span className="text-[10px] tracking-widest font-medium" style={{ color: "var(--text-muted)" }}>
+    <div className="flex items-center gap-3 mb-4">
+      <span className="text-[10px] tracking-[0.2em] uppercase font-medium" style={{ color: "var(--text-muted)" }}>
         {label}
       </span>
       <span className="text-[10px] tabular-nums" style={{ color: "var(--text-muted)", opacity: 0.5 }}>
@@ -145,31 +147,32 @@ export function ProjectsPanel() {
   return (
     <div className="h-full flex flex-col overflow-hidden">
 
-      {/* En-tête */}
-      <div className="px-7 pt-6 pb-5 shrink-0 flex items-end justify-between"
+      {/* En-tête + KPI, sur une même bande aérée */}
+      <div className="px-10 pt-9 pb-8 shrink-0"
         style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
-        <div>
-          <p className="text-[10px] tracking-[0.25em] uppercase mb-1" style={{ color: "var(--text-muted)" }}>
-            Système d'information
-          </p>
-          <h1 className="text-xl font-semibold tracking-tight" style={{ color: "var(--neon-cyan)" }}>
-            Projets
-          </h1>
+        <div className="flex items-end justify-between mb-8">
+          <div>
+            <p className="text-[10px] tracking-[0.28em] uppercase mb-2" style={{ color: "var(--text-muted)" }}>
+              Système d'information
+            </p>
+            <h1 className="text-2xl font-light tracking-tight" style={{ color: "var(--text-primary)" }}>
+              Projets <span style={{ color: "var(--neon-cyan)" }}>en cours</span>
+            </h1>
+          </div>
+          {panel?.stale && (
+            <span className="text-[10px] tracking-widest" style={{ color: "var(--status-warn)" }}>
+              données obsolètes
+            </span>
+          )}
         </div>
-        {panel?.stale && (
-          <span className="text-[10px] tracking-widest" style={{ color: "var(--status-warn)" }}>
-            données obsolètes
-          </span>
-        )}
-      </div>
 
-      {/* Tuiles stats */}
-      <div className="px-7 py-5 grid grid-cols-5 gap-3 shrink-0">
-        <Stat label="Total"    value={total}  color="var(--neon-cyan)" />
-        <Stat label="En cours" value={active} color="var(--status-ok)" />
-        <Stat label="À risque" value={atRisk} color={atRisk ? "var(--status-warn)" : "var(--text-muted)"} />
-        <Stat label="En pause" value={paused} color={paused ? "var(--status-new)"  : "var(--text-muted)"} />
-        <Stat label="Terminés" value={done}   color={done   ? "var(--neon-cyan)"   : "var(--text-muted)"} />
+        <div className="grid grid-cols-5 gap-6">
+          <Kpi label="Total"    value={total}  color="var(--neon-cyan)" />
+          <Kpi label="En cours" value={active} color="var(--status-ok)" />
+          <Kpi label="À risque" value={atRisk} color={atRisk ? "var(--status-warn)" : "var(--text-muted)"} />
+          <Kpi label="En pause" value={paused} color={paused ? "var(--status-new)"  : "var(--text-muted)"} />
+          <Kpi label="Terminés" value={done}   color={done   ? "var(--neon-cyan)"   : "var(--text-muted)"} />
+        </div>
       </div>
 
       {/* Grille de cartes */}
@@ -178,13 +181,13 @@ export function ProjectsPanel() {
           Chargement…
         </div>
       ) : (
-        <div className="flex-1 min-h-0 overflow-auto px-7 pb-7 space-y-5 animate-fade-in">
+        <div className="flex-1 min-h-0 overflow-auto px-10 py-8 space-y-9 animate-fade-in">
 
           {/* Prioritaires */}
           {pinned.length > 0 && (
             <div>
               <SectionLabel label="Prioritaires" count={pinned.length} />
-              <div className="grid grid-cols-3 gap-3 mt-2">
+              <div className="grid grid-cols-3 gap-5">
                 {pinned.map(p => <Card key={p.id} project={p} />)}
               </div>
             </div>
@@ -194,7 +197,7 @@ export function ProjectsPanel() {
           {running.length > 0 && (
             <div>
               {pinned.length > 0 && <SectionLabel label="En cours" count={running.length} />}
-              <div className="grid grid-cols-3 gap-3 mt-2">
+              <div className="grid grid-cols-3 gap-5">
                 {running.map(p => <Card key={p.id} project={p} />)}
               </div>
             </div>
@@ -204,7 +207,7 @@ export function ProjectsPanel() {
           {inactive.length > 0 && (
             <div>
               <SectionLabel label="Terminés & en pause" count={inactive.length} />
-              <div className="grid grid-cols-3 gap-3 mt-2">
+              <div className="grid grid-cols-3 gap-5">
                 {inactive.map(p => <Card key={p.id} project={p} />)}
               </div>
             </div>

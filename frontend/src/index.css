@@ -18,7 +18,7 @@ body {
 
 /* Lueur douce sur textes accent */
 .neon-text {
-  text-shadow: 0 0 20px rgba(129,140,248,0.4);
+  text-shadow: 0 0 20px rgba(56,189,248,0.35);
 }
 
 /* Bordure subtile pour inputs */
@@ -28,7 +28,7 @@ body {
 }
 .neon-border:focus {
   outline: none;
-  border-color: rgba(129,140,248,0.5);
+  border-color: rgba(56,189,248,0.5);
 }
 
 @keyframes orbit {
