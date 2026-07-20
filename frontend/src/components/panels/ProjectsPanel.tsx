@@ -17,11 +17,12 @@ const STATUS: Record<KeyStatus, { label: string; color: string; muted?: boolean 
 function Row({ project: p, rank }: { project: Project; rank: number }) {
   const s = STATUS[p.keyStatus];
   const pinned = p.sortOrder < 99;
+  const isRecettage = p.keyStatus === "on_track" && p.progress === 100;
 
   return (
     <div
       className="grid items-center gap-6 px-4 rounded-xl transition-colors duration-150"
-      style={{ gridTemplateColumns: "3rem minmax(0,1fr) 13rem 4rem", minHeight: 56 }}
+      style={{ gridTemplateColumns: "3rem minmax(0,1fr) 13rem 8rem", minHeight: 56 }}
       onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.035)")}
       onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
     >
@@ -63,9 +64,19 @@ function Row({ project: p, rank }: { project: Project; rank: number }) {
       </div>
 
       {/* Taux */}
-      <span className="text-xl font-extralight tabular-nums text-right" style={{ color: s.color }}>
-        {p.progress}<span className="text-xs font-light opacity-60">%</span>
-      </span>
+      <div className="flex items-center justify-end gap-2">
+        {isRecettage && (
+          <span
+            className="text-[10px] font-medium tracking-wide px-2 py-0.5 rounded-md whitespace-nowrap"
+            style={{ color: "var(--neon-cyan)", background: "rgba(56,189,248,0.12)", border: "1px solid rgba(56,189,248,0.25)" }}
+          >
+            Recettage
+          </span>
+        )}
+        <span className="text-xl font-extralight tabular-nums text-right" style={{ color: s.color }}>
+          {p.progress}<span className="text-xs font-light opacity-60">%</span>
+        </span>
+      </div>
     </div>
   );
 }
