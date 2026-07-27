@@ -50,6 +50,9 @@ export function Projets() {
         )}
         {active.map((p) => {
           const dot = PROJECT_DOT[p.keyStatus];
+          const isRecettage = p.keyStatus === "on_track" && p.progress === 100;
+          const tagColor = isRecettage ? C.teal : dot;
+          const tagLabel = isRecettage ? "RECETTAGE" : PROJECT_LABEL[p.keyStatus];
           return (
             <div key={p.id}
               style={{ display: "grid", gridTemplateColumns: "minmax(300px,1.3fr) 130px 1fr 120px 150px", alignItems: "center", gap: 28, ...glass(0.035, 0.07), padding: "20px 28px", transition: "all .25s" }}
@@ -62,8 +65,8 @@ export function Projets() {
                   <div style={{ fontFamily: MONO, fontSize: 11, letterSpacing: ".1em", color: C.muted40 }}>{p.owner}</div>
                 </div>
               </div>
-              <div style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: ".1em", textTransform: "uppercase", textAlign: "center", padding: "6px 0", borderRadius: 9999, border: `1px solid ${dot}55`, color: dot }}>
-                {PROJECT_LABEL[p.keyStatus]}
+              <div style={{ fontFamily: MONO, fontSize: 10.5, letterSpacing: ".1em", textTransform: "uppercase", textAlign: "center", padding: "6px 0", borderRadius: 9999, border: `1px solid ${tagColor}55`, color: tagColor, background: isRecettage ? "rgba(90,200,250,.1)" : "transparent" }}>
+                {tagLabel}
               </div>
               <div style={{ height: 6, borderRadius: 3, background: "rgba(238,240,242,.08)", overflow: "hidden" }}>
                 <div style={{ height: "100%", borderRadius: 3, background: "linear-gradient(90deg,#1450E2,#5ac8fa)", animation: "barGrow 1s ease-out", width: `${p.progress}%` }} />
