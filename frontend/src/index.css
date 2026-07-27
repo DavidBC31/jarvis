@@ -9,79 +9,38 @@ html, body, #root {
 }
 
 body {
-  background: var(--bg-base);
-  color: var(--text-primary);
-  /* Rajdhani : sans techy semi-condensé, identité HUD */
-  font-family: "Rajdhani", "Inter", ui-sans-serif, sans-serif;
+  background: #060B1D;
+  color: #EEF0F2;
+  font-family: "Space Grotesk", "Helvetica Neue", ui-sans-serif, sans-serif;
+  letter-spacing: -0.01em;
   overflow: hidden;
   -webkit-font-smoothing: antialiased;
-  letter-spacing: 0.01em;
 }
 
-/* Orbitron : chiffres & titres hero, look sci-fi */
-.font-hero {
-  font-family: "Orbitron", "Rajdhani", ui-sans-serif, sans-serif;
-  letter-spacing: 0.02em;
+/* Police data / labels / nav du design ATLAS */
+.mono {
+  font-family: "Space Mono", ui-monospace, monospace;
 }
 
-/* Lueur douce sur textes accent */
-.neon-text {
-  text-shadow: 0 0 20px rgba(56,189,248,0.35);
-}
+.neon-text { text-shadow: 0 0 20px rgba(90,200,250,0.35); }
 
-/* Bordure subtile pour inputs */
-.neon-border {
-  border: 1px solid rgba(255,255,255,0.10);
-  box-shadow: inset 0 0 0 0 transparent;
-}
-.neon-border:focus {
-  outline: none;
-  border-color: rgba(56,189,248,0.5);
-}
+.neon-border { border: 1px solid rgba(255,255,255,0.10); }
+.neon-border:focus { outline: none; border-color: rgba(90,200,250,0.5); }
 
-@keyframes orbit {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
+/* ── Animations ATLAS ─────────────────────────────────────────────────────── */
+@keyframes drift1 { 0%{transform:translate(0,0) scale(1)} 50%{transform:translate(60px,-40px) scale(1.08)} 100%{transform:translate(0,0) scale(1)} }
+@keyframes drift2 { 0%{transform:translate(0,0) scale(1)} 50%{transform:translate(-80px,50px) scale(1.12)} 100%{transform:translate(0,0) scale(1)} }
+@keyframes orbPulse {
+  0%,100% { box-shadow:0 0 60px rgba(20,80,226,.55),0 0 140px rgba(90,200,250,.25),inset 0 0 40px rgba(90,200,250,.35) }
+  50%     { box-shadow:0 0 90px rgba(20,80,226,.8),0 0 200px rgba(90,200,250,.4),inset 0 0 60px rgba(90,200,250,.5) }
 }
-
-@keyframes pulse-glow {
-  0%, 100% { opacity: 0.5; }
-  50%       { opacity: 1; }
-}
-
-@keyframes fade-in-up {
-  from { opacity: 0; transform: translateY(6px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-.animate-fade-in {
-  animation: fade-in-up 0.25s ease-out;
-}
-
-@keyframes float-soft {
-  0%, 100% { transform: translateY(0); }
-  50%      { transform: translateY(-8px); }
-}
-.float-soft { animation: float-soft 7s ease-in-out infinite; }
-
-@keyframes pulse-soft {
-  0%, 100% { opacity: 0.4; }
-  50%      { opacity: 1; }
-}
-.pulse-soft { animation: pulse-soft 3s ease-in-out infinite; }
-
-/* Rotations des anneaux orbitaux (autour du centre du viewBox) */
-.spin-40, .spin-28-rev, .spin-60 {
-  transform-box: view-box;
-  transform-origin: 160px 160px;
-}
-.spin-40     { animation: orbit 40s linear infinite; }
-.spin-28-rev { animation: orbit 28s linear infinite reverse; }
-.spin-60     { animation: orbit 60s linear infinite; }
-
-/* Rotation autour du centre propre de l'élément (viewBox 220) */
-.spin-c-60 {
-  animation: orbit 60s linear infinite;
-  transform-box: fill-box;
-  transform-origin: center;
-}
+@keyframes blinkDot { 0%,100%{opacity:1} 50%{opacity:.25} }
+@keyframes riseIn { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
+@keyframes incidentGlow { 0%,100%{opacity:.5} 50%{opacity:1} }
+@keyframes barGrow { from{width:0} }
+@keyframes gyroA { from{transform:rotateX(66deg) rotateY(12deg) rotateZ(0deg)} to{transform:rotateX(66deg) rotateY(12deg) rotateZ(360deg)} }
+@keyframes gyroB { from{transform:rotateX(-52deg) rotateY(28deg) rotateZ(360deg)} to{transform:rotateX(-52deg) rotateY(28deg) rotateZ(0deg)} }
+@keyframes gyroC { from{transform:rotateX(18deg) rotateY(-64deg) rotateZ(0deg)} to{transform:rotateX(18deg) rotateY(-64deg) rotateZ(360deg)} }
+@keyframes scanSweep { 0%{top:-12%} 100%{top:112%} }
+@keyframes atlasTicker { from{transform:translateX(0)} to{transform:translateX(-50%)} }
+@keyframes riseInFast { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
