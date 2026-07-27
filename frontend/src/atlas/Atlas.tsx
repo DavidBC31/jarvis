@@ -131,6 +131,13 @@ export function Atlas() {
           </nav>
 
           <div style={{ display: "flex", alignItems: "center", gap: 22, flex: 1, justifyContent: "flex-end" }}>
+            <button title="Administration des projets"
+              onClick={() => { location.hash = "admin"; }}
+              style={{ background: "transparent", border: "none", cursor: "pointer", color: C.muted40, fontSize: 20, lineHeight: 1, padding: 4, transition: "color .25s" }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = C.teal)}
+              onMouseLeave={(e) => (e.currentTarget.style.color = C.muted40)}>
+              ⚙
+            </button>
             <div style={{ display: "flex", alignItems: "center", gap: 9, background: healthy ? "rgba(52,199,89,.09)" : "rgba(236,32,38,.1)", border: `1px solid ${healthy ? "rgba(52,199,89,.25)" : "rgba(236,32,38,.3)"}`, borderRadius: 9999, padding: "8px 16px" }}>
               <div style={{ width: 7, height: 7, borderRadius: "50%", background: healthy ? C.ok : C.ko, animation: "blinkDot 2.4s infinite" }} />
               <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: ".12em", color: healthy ? C.okText : C.koText }}>
