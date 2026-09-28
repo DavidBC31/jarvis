@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import type { KeyStatus, ServiceState, TicketStatus } from "../types";
+import type { KeyStatus, ServiceState } from "../types";
 
 // Palette ATLAS (charte Bleu Citron + design system)
 export const C = {
@@ -56,14 +56,6 @@ export const SERVICE_LABEL: Record<ServiceState, string> = {
   ok: "OPÉRATIONNEL", warn: "SURVEILLANCE", alert: "HORS LIGNE", maint: "MAINTENANCE",
 };
 
-// ── Statuts tickets ───────────────────────────────────────────────────────────
-export const TICKET_DOT: Record<TicketStatus, string> = {
-  new: C.teal, in_progress: C.teal, on_hold: C.warn, resolved: C.ok, closed: C.muted40,
-};
-export const TICKET_LABEL: Record<TicketStatus, string> = {
-  new: "NOUVEAU", in_progress: "EN COURS", on_hold: "EN ATTENTE", resolved: "RÉSOLU", closed: "CLÔTURÉ",
-};
-
 // ── Dates ─────────────────────────────────────────────────────────────────────
 const JOURS = ["DIM.", "LUN.", "MAR.", "MER.", "JEU.", "VEN.", "SAM."];
 const MOIS  = ["JANV.", "FÉVR.", "MARS", "AVR.", "MAI", "JUIN", "JUIL.", "AOÛT", "SEPT.", "OCT.", "NOV.", "DÉC."];
@@ -88,17 +80,5 @@ export function echeance(iso: string | null): string {
   if (!iso) return "—";
   const d = new Date(iso);
   if (isNaN(d.getTime())) return "—";
-  return `${pad(d.getDate())} ${MOIS[d.getMonth()]}`;
-}
-
-// Heure/relatif court pour un ticket ("11:5O" ou "HIER"/"O2 JUIL.").
-export function shortWhen(iso: string): string {
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return "—";
-  const now = new Date();
-  const sameDay = d.toDateString() === now.toDateString();
-  if (sameDay) return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
-  const y = new Date(now); y.setDate(now.getDate() - 1);
-  if (d.toDateString() === y.toDateString()) return "HIER";
   return `${pad(d.getDate())} ${MOIS[d.getMonth()]}`;
 }

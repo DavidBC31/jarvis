@@ -14,7 +14,7 @@ const PHASE_LABEL: Record<RagPhase, string> = {
 const SUGGESTIONS = [
   "Quels projets sont prioritaires ?",
   "Quels services sont dégradés ?",
-  "Résume les tickets ouverts",
+  "Quels projets sont en recettage ?",
 ];
 
 export function Vocal() {

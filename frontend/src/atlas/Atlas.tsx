@@ -1,18 +1,44 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useDashboard } from "../store";
 import { C, O, MONO, clockStr, dateStr, pad } from "./util";
 import { Projets } from "./screens/Projets";
 import { Systemes } from "./screens/Systemes";
 import { Vocal } from "./screens/Vocal";
-import { Infogerance } from "./screens/Infogerance";
 
-type Screen = "projets" | "systemes" | "vocal" | "infogerance";
+type Screen = "projets" | "systemes" | "vocal";
 const NAV: { id: Screen; label: string }[] = [
   { id: "projets", label: "PROJETS" },
   { id: "systemes", label: "SYSTÈMES" },
   { id: "vocal", label: "VOCAL" },
-  { id: "infogerance", label: "INFOGÉRANCE" },
 ];
+
+// Rotation automatique (affichage permanent en open space) : après 1 min sans
+// activité, Projets et Systèmes s'enchaînent, chacun avec sa durée d'affichage.
+const IDLE_MS = 60_000;
+const DWELL_MS: Partial<Record<Screen, number>> = { projets: 60_000, systemes: 30_000 };
+const NEXT: Partial<Record<Screen, Screen>> = { projets: "systemes", systemes: "projets" };
+
+/** Horodatage de la dernière interaction (souris, clavier, tactile). */
+function useLastActivity() {
+  const last = useRef(Date.now());
+  useEffect(() => {
+    let lx = -1, ly = -1;
+    const bump = () => { last.current = Date.now(); };
+    // Chrome peut émettre des mousemove sans déplacement réel : on les ignore.
+    const onMove = (e: MouseEvent) => {
+      if (e.clientX === lx && e.clientY === ly) return;
+      lx = e.clientX; ly = e.clientY; bump();
+    };
+    const evs = ["mousedown", "keydown", "touchstart", "wheel"] as const;
+    evs.forEach((ev) => window.addEventListener(ev, bump, { passive: true }));
+    window.addEventListener("mousemove", onMove, { passive: true });
+    return () => {
+      evs.forEach((ev) => window.removeEventListener(ev, bump));
+      window.removeEventListener("mousemove", onMove);
+    };
+  }, []);
+  return last;
+}
 
 function useScale() {
   const [scale, setScale] = useState(() =>
@@ -45,12 +71,29 @@ export function Atlas() {
   const footer = useDashboard((s) => s.state?.footer);
   const services = useDashboard((s) => s.state?.services);
   const projects = useDashboard((s) => s.state?.projects);
-  const tickets = useDashboard((s) => s.state?.tickets);
+  const ragPhase = useDashboard((s) => s.rag.phase);
 
   const healthy = (footer?.globalStatus?.healthy ?? true) && connection === "online";
 
-  const go = (s: Screen) => setScreen(s);
+  const lastActivity = useLastActivity();
+  const screenSince = useRef(Date.now());
+  const go = (s: Screen) => { setScreen(s); screenSince.current = Date.now(); };
   const triggerIncident = () => { setIncident(true); setIncidentStart(new Date()); };
+
+  // Moteur de rotation, évalué à chaque tick d'horloge (1 s).
+  const t = now.getTime();
+  const idle = t - lastActivity.current >= IDLE_MS;
+  const dwell = DWELL_MS[screen];
+  const shownFor = t - Math.max(screenSince.current, lastActivity.current);
+  useEffect(() => {
+    if (incident) return;
+    if (ragPhase !== "idle") { lastActivity.current = Date.now(); return; } // Jarvis parle/écoute
+    if (!idle) return;
+    if (!dwell) go("projets");                    // écran hors rotation (Vocal) → on la reprend
+    else if (shownFor >= dwell) go(NEXT[screen]!);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [t]);
+  const autoProgress = idle && dwell && !incident ? Math.min(1, shownFor / dwell) : null;
 
   let incidentDuree = "—";
   if (incidentStart) {
@@ -59,13 +102,11 @@ export function Atlas() {
   }
 
   // Ticker : agrégats réels + repères.
-  const openTickets = (tickets?.tickets ?? []).filter(t => t.status !== "resolved" && t.status !== "closed").length;
   const activeProj = (projects?.projects ?? []).filter(p => p.keyStatus !== "done" && p.keyStatus !== "paused").length;
   const tickerItems = [
     `ATLAS v2.4 — ${(footer?.globalStatus?.label ?? "SYSTÈMES NOMINAUX").toUpperCase()}`,
     `SERVICES : ${O(services?.upCount ?? 0)}/${O(services?.total ?? 0)} EN LIGNE`,
     `PROJETS ACTIFS : ${O(activeProj)}`,
-    `TICKETS OUVERTS : ${O(openTickets)}`,
     footer?.macStudio ? `MAC STUDIO · ${O(footer.macStudio.temperatureC)}°C · CPU ${O(footer.macStudio.cpuLoadPercent)} %` : "SUPERVISION TEMPS RÉEL",
     "SAUVEGARDES : 1OO % VERTES",
   ];
@@ -116,6 +157,13 @@ export function Atlas() {
             </div>
           </div>
 
+          <div style={{ position: "relative", flexShrink: 0 }}>
+          {/* Rotation auto : fine jauge du temps restant avant l'écran suivant */}
+          {autoProgress !== null && (
+            <div style={{ position: "absolute", left: 24, right: 24, bottom: -10, height: 2, borderRadius: 1, background: "rgba(238,240,242,.08)", overflow: "hidden" }}>
+              <div key={screen} style={{ height: "100%", width: `${autoProgress * 100}%`, background: C.teal, opacity: 0.6, transition: "width 1s linear" }} />
+            </div>
+          )}
           <nav style={{ display: "flex", gap: 4, background: "rgba(238,240,242,.05)", backdropFilter: "blur(30px) saturate(160%)", border: "1px solid rgba(238,240,242,.09)", borderRadius: 9999, padding: 5, boxShadow: "0 2px 20px rgba(0,0,0,.3)", flexShrink: 0 }}>
             {NAV.map((n) => {
               const active = screen === n.id;
@@ -129,6 +177,7 @@ export function Atlas() {
               );
             })}
           </nav>
+          </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: 22, flex: 1, justifyContent: "flex-end" }}>
             <button title="Administration des projets"
@@ -155,7 +204,6 @@ export function Atlas() {
         {screen === "projets" && <Projets />}
         {screen === "systemes" && <Systemes onIncident={triggerIncident} />}
         {screen === "vocal" && <Vocal />}
-        {screen === "infogerance" && <Infogerance />}
 
         {/* ── Ticker ── */}
         <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, zIndex: 6, height: 42, borderTop: "1px solid rgba(238,240,242,.07)", background: "rgba(6,11,29,.6)", backdropFilter: "blur(20px)", overflow: "hidden", display: "flex", alignItems: "center" }}>
