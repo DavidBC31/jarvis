@@ -43,6 +43,8 @@ export interface Project {
   progress: number;
   overdue: boolean;
   sortOrder: number; // 1 = top priorité, 99 = non classé
+  // Dernière évolution d'avancement — présente seulement sur les 5 projets modifiés le plus récemment.
+  change?: { from: number; to: number; delta: number; at: string };
 }
 
 export interface ProjectsPanel extends PanelMeta {

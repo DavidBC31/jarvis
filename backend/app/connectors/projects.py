@@ -21,6 +21,10 @@ from pydantic import BaseModel, Field, ValidationError
 KeyStatus = Literal["on_track", "at_risk", "critical", "done", "paused"]
 
 DATA_FILE = Path(__file__).resolve().parents[2] / "data" / "projects.json"
+# Historique des évolutions d'avancement (état d'exécution, non versionné).
+HISTORY_FILE = DATA_FILE.with_name("progress_history.json")
+HISTORY_MAX = 100     # événements conservés sur disque
+RECENT_CHANGES = 5    # projets mis en avant à l'écran (les plus récemment modifiés)
 
 # Ordre de priorité pour le tri (le plus urgent en tête).
 _PRIORITY = {"critical": 0, "at_risk": 1, "on_track": 2, "paused": 3, "done": 4}
@@ -101,12 +105,67 @@ def read_inputs_raw() -> list[dict]:
         return []
 
 
+# --- Historique des évolutions d'avancement ---------------------------------
+
+
+def _load_history() -> dict | None:
+    try:
+        h = json.loads(HISTORY_FILE.read_text("utf-8"))
+        if isinstance(h.get("snapshot"), dict) and isinstance(h.get("changes"), list):
+            return h
+    except (OSError, json.JSONDecodeError, AttributeError):
+        pass
+    return None
+
+
+def _track_progress(projects: list[dict]) -> list[dict]:
+    """Compare l'avancement à la dernière valeur connue, journalise chaque
+    changement et renvoie l'historique. Couvre l'admin comme l'édition manuelle
+    du fichier. Au tout premier passage, seule la référence est enregistrée."""
+    current = {p["id"]: p["progress"] for p in projects}
+    history = _load_history()
+    if history is None:
+        history = {"snapshot": current, "changes": []}
+    else:
+        now = _now_iso()
+        for pid, to in current.items():
+            frm = history["snapshot"].get(pid)
+            if frm is not None and frm != to:
+                history["changes"].append({"id": pid, "from": frm, "to": to, "at": now})
+        if current == history["snapshot"]:
+            return history["changes"]
+        history["snapshot"] = current
+        history["changes"] = history["changes"][-HISTORY_MAX:]
+    try:
+        HISTORY_FILE.write_text(json.dumps(history, ensure_ascii=False, indent=2) + "\n", "utf-8")
+    except OSError:
+        pass  # l'historique est un bonus : on n'empêche jamais l'affichage
+    return history["changes"]
+
+
+def _attach_recent_changes(projects: list[dict], changes: list[dict]) -> None:
+    """Ajoute ``change`` aux projets dont l'avancement a bougé le plus récemment
+    (dernier changement de chacun, sur les RECENT_CHANGES projets les plus récents)."""
+    by_id = {p["id"]: p for p in projects}
+    seen: set[str] = set()
+    for c in reversed(changes):
+        if c["id"] in seen or c["id"] not in by_id:
+            continue
+        seen.add(c["id"])
+        by_id[c["id"]]["change"] = {
+            "from": c["from"], "to": c["to"], "delta": c["to"] - c["from"], "at": c["at"],
+        }
+        if len(seen) >= RECENT_CHANGES:
+            break
+
+
 def build_panel() -> dict:
     """Construit le panneau Projets. En cas d'erreur, conserve le dernier état
     valide et marque ``stale`` + ``sourceError``."""
     global _last_good
     try:
         projects = _normalize(_read_inputs())
+        _attach_recent_changes(projects, _track_progress(projects))
         _last_good = projects
         return {"updatedAt": _now_iso(), "stale": False, "projects": projects}
     except ValueError as e:

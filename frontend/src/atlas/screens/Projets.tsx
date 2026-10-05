@@ -21,6 +21,20 @@ function Kpi({ label, value, unit, color }: { label: string; value: string; unit
 // Projet terminé (statut) ou arrivé à 100 % (en recettage) → colonne de droite.
 const isFinished = (p: Project) => p.keyStatus === "done" || p.progress >= 100;
 
+// Petite flèche d'évolution (▲ vert / ▼ orange) sur les projets récemment mis à jour.
+function Trend({ change }: { change: NonNullable<Project["change"]> }) {
+  const up = change.delta > 0;
+  const color = up ? C.okText : C.warnText;
+  const d = new Date(change.at);
+  const quand = isNaN(d.getTime()) ? "" : ` · le ${d.toLocaleDateString("fr-FR")}`;
+  return (
+    <span title={`${change.from} % → ${change.to} %${quand}`}
+      style={{ fontFamily: MONO, fontSize: 11, fontWeight: 700, color, background: up ? "rgba(52,199,89,.12)" : "rgba(255,149,0,.12)", border: `1px solid ${up ? "rgba(52,199,89,.3)" : "rgba(255,149,0,.3)"}`, borderRadius: 9999, padding: "2px 7px", whiteSpace: "nowrap", justifySelf: "end" }}>
+      {up ? "▲" : "▼"} {O(Math.abs(change.delta))}
+    </span>
+  );
+}
+
 // Rangée compacte (hauteur réduite d'environ 25 %).
 function Row({ project: p }: { project: Project }) {
   const done = p.keyStatus === "done";
@@ -30,7 +44,7 @@ function Row({ project: p }: { project: Project }) {
 
   return (
     <div
-      style={{ display: "grid", gridTemplateColumns: "minmax(0,1.5fr) 92px 1fr 56px", alignItems: "center", gap: 14, ...glass(0.035, 0.07), borderRadius: 12, padding: "7px 18px", flexShrink: 0, transition: "all .25s", opacity: done ? 0.75 : 1 }}
+      style={{ display: "grid", gridTemplateColumns: "minmax(0,1.5fr) 92px 1fr 54px 56px", alignItems: "center", gap: 14, ...glass(0.035, 0.07), borderRadius: 12, padding: "7px 18px", flexShrink: 0, transition: "all .25s", opacity: done ? 0.75 : 1 }}
       onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(238,240,242,.06)"; e.currentTarget.style.borderColor = "rgba(90,200,250,.3)"; }}
       onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(238,240,242,.035)"; e.currentTarget.style.borderColor = "rgba(238,240,242,.07)"; }}>
       <div style={{ display: "flex", alignItems: "center", gap: 11, minWidth: 0 }}>
@@ -48,6 +62,7 @@ function Row({ project: p }: { project: Project }) {
       <div style={{ height: 5, borderRadius: 3, background: "rgba(238,240,242,.08)", overflow: "hidden" }}>
         <div style={{ height: "100%", borderRadius: 3, background: "linear-gradient(90deg,#1450E2,#5ac8fa)", animation: "barGrow 1s ease-out", width: `${p.progress}%` }} />
       </div>
+      {p.change && p.change.delta !== 0 ? <Trend change={p.change} /> : <span />}
       <div style={{ fontFamily: MONO, fontSize: 16, fontWeight: 700, textAlign: "right" }}>
         {O(p.progress)}<span style={{ fontSize: 10, color: C.muted40 }}> %</span>
       </div>

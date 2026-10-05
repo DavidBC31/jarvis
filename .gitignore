@@ -12,3 +12,6 @@ npm-debug.log*
 .DS_Store
 .env
 *.local
+
+# Historique des évolutions d'avancement (état d'exécution du serveur)
+backend/data/progress_history.json
