@@ -15,7 +15,8 @@ const NAV: { id: Screen; label: string }[] = [
 // Rotation automatique (affichage permanent en open space) : après 1 min sans
 // activité, Projets et Systèmes s'enchaînent, chacun avec sa durée d'affichage.
 const IDLE_MS = 60_000;
-const DWELL_MS: Partial<Record<Screen, number>> = { projets: 60_000, systemes: 30_000 };
+// Projets est l'écran de référence : il reste affiché 1,5 fois plus longtemps.
+const DWELL_MS: Partial<Record<Screen, number>> = { projets: 90_000, systemes: 30_000 };
 const NEXT: Partial<Record<Screen, Screen>> = { projets: "systemes", systemes: "projets" };
 
 /** Horodatage de la dernière interaction (souris, clavier, tactile). */
@@ -111,7 +112,9 @@ export function Atlas() {
     "SAUVEGARDES : 1OO % VERTES",
   ];
 
-  const orbVisible = screen !== "vocal" && !incident;
+  // Masqué sur Projets : l'assistant vocal n'est pas opérationnel, l'orbe
+  // n'avait pas à occuper l'écran de référence.
+  const orbVisible = screen === "systemes" && !incident;
 
   return (
     <div style={{ position: "relative", width: "100%", height: "100vh", overflow: "hidden", background: C.bg }}>
