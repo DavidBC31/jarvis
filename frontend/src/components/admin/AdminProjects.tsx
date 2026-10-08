@@ -26,6 +26,7 @@ const emptyRow = (): Row => ({
 export function AdminProjects() {
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
 
   useEffect(() => {
@@ -43,40 +44,69 @@ export function AdminProjects() {
 
   const save = async () => {
     setMsg(null);
-    const res = await fetch("/api/projects", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ projects: rows }),
-    });
-    if (res.ok) {
-      const d = await res.json();
-      setRows(
-        (d.panel?.projects ?? rows).map((p: Project) => ({
-          id: p.id,
-          name: p.name,
-          owner: p.owner,
-          dueDate: p.dueDate,
-          keyStatus: p.keyStatus,
-          progress: p.progress,
-          sortOrder: p.sortOrder ?? 99,
-        })),
-      );
-      setMsg({ kind: "ok", text: "Enregistré — diffusé à l'écran." });
-    } else {
-      const d = await res.json().catch(() => ({}));
-      setMsg({ kind: "err", text: d.error ?? `Erreur ${res.status} (validation).` });
+    setSaving(true);
+    try {
+      const res = await fetch("/api/projects", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ projects: rows }),
+      });
+      if (res.ok) {
+        const d = await res.json();
+        setRows(
+          (d.panel?.projects ?? rows).map((p: Project) => ({
+            id: p.id,
+            name: p.name,
+            owner: p.owner,
+            dueDate: p.dueDate,
+            keyStatus: p.keyStatus,
+            progress: p.progress,
+            sortOrder: p.sortOrder ?? 99,
+          })),
+        );
+        setMsg({ kind: "ok", text: "Enregistré — diffusé à l'écran." });
+      } else {
+        const d = await res.json().catch(() => ({}));
+        setMsg({ kind: "err", text: d.error ?? `Erreur ${res.status} (validation).` });
+      }
+    } catch {
+      setMsg({ kind: "err", text: "Serveur injoignable — rien n'a été enregistré." });
+    } finally {
+      setSaving(false);
     }
   };
 
   return (
     <div className="h-full w-full p-6 overflow-auto">
-      <div className="flex items-center justify-between mb-4">
+      {/* Bandeau collant : « Enregistrer » reste accessible même en bas de liste. */}
+      <div
+        className="sticky top-0 z-10 flex items-center gap-4 mb-4 py-3 -mt-3"
+        style={{ background: "#060B1D", borderBottom: "1px solid rgba(255,255,255,0.08)" }}
+      >
         <h1 className="font-display text-xl tracking-[0.25em] neon-text">
           ADMIN · PROJETS SI
         </h1>
-        <a href="#" className="text-xs tracking-widest text-neon-cyan">
-          ← TABLEAU DE BORD
-        </a>
+        {msg && (
+          <span
+            className="text-xs"
+            style={{ color: msg.kind === "ok" ? "var(--status-ok)" : "var(--status-alert)" }}
+          >
+            {msg.text}
+          </span>
+        )}
+        <div className="ml-auto flex items-center gap-4">
+          <a href="#" className="text-xs tracking-widest text-neon-cyan">
+            ← TABLEAU DE BORD
+          </a>
+          <button
+            onClick={save}
+            disabled={saving || loading}
+            className="rounded px-4 py-1.5 text-xs tracking-widest text-bg-base font-display disabled:opacity-50"
+            style={{ background: "var(--neon-cyan)" }}
+          >
+            {saving ? "ENREGISTREMENT…" : "ENREGISTRER"}
+          </button>
+        </div>
       </div>
 
       {loading ? (
@@ -186,23 +216,6 @@ export function AdminProjects() {
             >
               + AJOUTER
             </button>
-            <button
-              onClick={save}
-              className="rounded px-4 py-1 text-xs tracking-widest text-bg-base font-display"
-              style={{ background: "var(--neon-cyan)" }}
-            >
-              ENREGISTRER
-            </button>
-            {msg && (
-              <span
-                className="text-xs"
-                style={{
-                  color: msg.kind === "ok" ? "var(--status-ok)" : "var(--status-alert)",
-                }}
-              >
-                {msg.text}
-              </span>
-            )}
           </div>
           <p className="text-text-muted text-[11px] mt-3">
             « Enregistrer » remplace la liste complète, réécrit
