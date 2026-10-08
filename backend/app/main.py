@@ -176,7 +176,11 @@ async def snapshot() -> JSONResponse:
 async def get_projects() -> JSONResponse:
     """Liste éditable des projets (source gérée à la main) + état du panneau."""
     return JSONResponse(
-        {"projects": projects_conn.read_inputs_raw(), "panel": state_module.STATE["projects"]}
+        {
+            "projects": projects_conn.read_inputs_raw(),
+            "panel": state_module.STATE["projects"],
+            "tags": list(projects_conn.TAGS),  # alimente le menu déroulant de l'admin
+        }
     )
 
 

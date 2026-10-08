@@ -20,6 +20,12 @@ from pydantic import BaseModel, Field, ValidationError
 
 KeyStatus = Literal["on_track", "at_risk", "critical", "done", "paused"]
 
+# Catégories de projet. Source de vérité unique : l'admin lit cette liste via
+# l'API, son menu déroulant ne peut donc pas diverger du backend.
+# Pour en ajouter une : compléter ce Literal et TAGS.
+Tag = Literal["", "Logiciel Interne", "Logiciel SaaS", "Serveurs", "Documentation"]
+TAGS: tuple[str, ...] = ("Logiciel Interne", "Logiciel SaaS", "Serveurs", "Documentation")
+
 DATA_FILE = Path(__file__).resolve().parents[2] / "data" / "projects.json"
 # Historique des évolutions d'avancement (état d'exécution, non versionné).
 HISTORY_FILE = DATA_FILE.with_name("progress_history.json")
@@ -41,6 +47,7 @@ class ProjectInput(BaseModel):
     owner: str = ""
     dueDate: str | None = None
     keyStatus: KeyStatus = "on_track"
+    tag: Tag = ""  # "" = non catégorisé (projets existants d'avant le champ)
     progress: int = Field(default=0, ge=0, le=100)
     sortOrder: int = Field(default=99, ge=0, le=999)  # priorité explicite : 1 = top, 99 = non classé
 
@@ -71,6 +78,7 @@ def _normalize(items: list[ProjectInput]) -> list[dict]:
                 "owner": p.owner,
                 "dueDate": p.dueDate,
                 "keyStatus": p.keyStatus,
+                "tag": p.tag,
                 "progress": p.progress,
                 "overdue": overdue,
                 "sortOrder": p.sortOrder,

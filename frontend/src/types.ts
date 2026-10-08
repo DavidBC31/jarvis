@@ -42,6 +42,7 @@ export interface Project {
   keyStatus: KeyStatus;
   progress: number;
   overdue: boolean;
+  tag: string; // catégorie ("" = non catégorisé) — valeurs servies par /api/projects
   sortOrder: number; // 1 = top priorité, 99 = non classé
   // Dernière évolution d'avancement — présente seulement sur les 5 projets modifiés le plus récemment.
   change?: { from: number; to: number; delta: number; at: string };

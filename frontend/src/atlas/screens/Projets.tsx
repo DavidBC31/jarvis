@@ -21,6 +21,26 @@ function Kpi({ label, value, unit, color }: { label: string; value: string; unit
 // Projet terminé (statut) ou arrivé à 100 % (en recettage) → colonne de droite.
 const isFinished = (p: Project) => p.keyStatus === "done" || p.progress >= 100;
 
+// Violet dédié à la recette (aucun statut ne l'utilise : le signal reste unique).
+const VIOLET = {
+  dot: "#c084fc",
+  bg: "rgba(168,85,247,.12)",
+  bgHover: "rgba(168,85,247,.2)",
+  border: "rgba(168,85,247,.5)",
+  glow: "rgba(168,85,247,.25)",
+  pill: "rgba(168,85,247,.18)",
+};
+
+// Couleur par catégorie — volontairement hors des teintes de statut
+// (vert / orange / rouge) et du violet de recette, pour éviter toute confusion.
+const TAG_COLOR: Record<string, string> = {
+  "Logiciel Interne": "#8fa8ff",
+  "Logiciel SaaS": C.teal,
+  "Serveurs": C.pink,
+  "Documentation": "rgba(238,240,242,.6)",
+};
+const tagColor = (t: string) => TAG_COLOR[t] ?? "rgba(238,240,242,.6)";
+
 // Petite flèche d'évolution (▲ vert / ▼ orange) sur les projets récemment mis à jour.
 function Trend({ change }: { change: NonNullable<Project["change"]> }) {
   const up = change.delta > 0;
@@ -36,28 +56,48 @@ function Trend({ change }: { change: NonNullable<Project["change"]> }) {
 }
 
 // Rangée compacte (hauteur réduite d'environ 25 %).
-function Row({ project: p }: { project: Project }) {
+function Row({ project: p, idx = 0 }: { project: Project; idx?: number }) {
   const done = p.keyStatus === "done";
   const recettage = !done && p.progress >= 100;
-  const dot = recettage ? C.teal : PROJECT_DOT[p.keyStatus];
-  const tagLabel = recettage ? "RECETTAGE" : PROJECT_LABEL[p.keyStatus];
+  const dot = recettage ? VIOLET.dot : PROJECT_DOT[p.keyStatus];
+  const statutLabel = recettage ? "RECETTAGE" : PROJECT_LABEL[p.keyStatus];
+  const idle = recettage ? VIOLET.bg : "rgba(238,240,242,.035)";
+  const border = recettage ? VIOLET.border : "rgba(238,240,242,.07)";
 
   return (
     <div
-      style={{ display: "grid", gridTemplateColumns: "minmax(0,1.5fr) 92px 1fr 54px 56px", alignItems: "center", gap: 14, ...glass(0.035, 0.07), borderRadius: 12, padding: "7px 18px", flexShrink: 0, transition: "all .25s", opacity: done ? 0.75 : 1 }}
-      onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(238,240,242,.06)"; e.currentTarget.style.borderColor = "rgba(90,200,250,.3)"; }}
-      onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(238,240,242,.035)"; e.currentTarget.style.borderColor = "rgba(238,240,242,.07)"; }}>
+      className={recettage ? "recette-wave" : undefined}
+      style={{
+        display: "grid", gridTemplateColumns: "minmax(0,1.5fr) 92px 1fr 54px 56px",
+        alignItems: "center", gap: 14, borderRadius: 12, padding: "7px 18px", flexShrink: 0,
+        backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)",
+        backgroundColor: idle, border: `1px solid ${border}`,
+        boxShadow: recettage ? `0 0 18px ${VIOLET.glow}` : undefined,
+        // Décalage négatif : chaque ligne démarre à un endroit différent de
+        // l'onde, qui cascade au lieu de clignoter en bloc.
+        animationDelay: recettage ? `${(idx % 5) * -0.68}s` : undefined,
+        transition: "background-color .25s, border-color .25s", opacity: done ? 0.75 : 1,
+      }}
+      onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = recettage ? VIOLET.bgHover : "rgba(238,240,242,.06)"; e.currentTarget.style.borderColor = recettage ? VIOLET.dot : "rgba(90,200,250,.3)"; }}
+      onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = idle; e.currentTarget.style.borderColor = border; }}>
       <div style={{ display: "flex", alignItems: "center", gap: 11, minWidth: 0 }}>
-        <div style={{ width: 7, height: 7, borderRadius: "50%", flexShrink: 0, background: dot }} />
+        <div style={{ width: 7, height: 7, borderRadius: "50%", flexShrink: 0, background: dot, boxShadow: recettage ? `0 0 8px ${dot}` : undefined }} />
         <div style={{ minWidth: 0 }}>
           <div style={{ fontSize: 15, fontWeight: 600, lineHeight: 1.2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.name}</div>
-          <div style={{ fontFamily: MONO, fontSize: 9.5, lineHeight: 1.3, letterSpacing: ".08em", color: C.muted40, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-            {p.owner} · {O(echeance(p.dueDate)).toUpperCase()}
+          <div style={{ display: "flex", alignItems: "center", gap: 7, minWidth: 0 }}>
+            {p.tag && (
+              <span style={{ fontFamily: MONO, fontSize: 8.5, letterSpacing: ".06em", textTransform: "uppercase", color: tagColor(p.tag), border: `1px solid ${tagColor(p.tag)}44`, borderRadius: 4, padding: "1px 5px", flexShrink: 0, lineHeight: 1.4 }}>
+                {p.tag}
+              </span>
+            )}
+            <span style={{ fontFamily: MONO, fontSize: 9.5, lineHeight: 1.3, letterSpacing: ".08em", color: C.muted40, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+              {p.owner} · {O(echeance(p.dueDate)).toUpperCase()}
+            </span>
           </div>
         </div>
       </div>
-      <div style={{ fontFamily: MONO, fontSize: 9, letterSpacing: ".08em", textTransform: "uppercase", textAlign: "center", padding: "4px 0", borderRadius: 9999, border: `1px solid ${dot}55`, color: dot, background: recettage ? "rgba(90,200,250,.1)" : "transparent" }}>
-        {tagLabel}
+      <div style={{ fontFamily: MONO, fontSize: 9, letterSpacing: ".08em", textTransform: "uppercase", textAlign: "center", padding: "4px 0", borderRadius: 9999, border: `1px solid ${recettage ? VIOLET.dot : dot + "55"}`, color: dot, background: recettage ? VIOLET.pill : "transparent" }}>
+        {statutLabel}
       </div>
       <div style={{ height: 5, borderRadius: 3, background: "rgba(238,240,242,.08)", overflow: "hidden" }}>
         <div style={{ height: "100%", borderRadius: 3, background: "linear-gradient(90deg,#1450E2,#5ac8fa)", animation: "barGrow 1s ease-out", width: `${p.progress}%` }} />
@@ -82,7 +122,7 @@ function Column({ title, items, empty }: { title: string; items: Project[]; empt
         {items.length === 0 && (
           <div style={{ color: C.muted40, fontFamily: MONO, fontSize: 12, padding: "12px 4px" }}>{empty}</div>
         )}
-        {items.map((p) => <Row key={p.id} project={p} />)}
+        {items.map((p, idx) => <Row key={p.id} project={p} idx={idx} />)}
       </div>
     </div>
   );

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import type { KeyStatus, Project } from "../../types";
 
 // Ligne éditable : mêmes champs que ProjectInput côté backend (overdue est calculé).
-type Row = Pick<Project, "id" | "name" | "owner" | "dueDate" | "keyStatus" | "progress" | "sortOrder">;
+type Row = Pick<Project, "id" | "name" | "owner" | "dueDate" | "keyStatus" | "tag" | "progress" | "sortOrder">;
 
 const KEY_STATUS: KeyStatus[] = ["on_track", "at_risk", "critical", "paused", "done"];
 const KEY_LABEL: Record<KeyStatus, string> = {
@@ -15,7 +15,7 @@ const KEY_LABEL: Record<KeyStatus, string> = {
 
 // ── Tri du tableau (affichage seul : l'ordre enregistré n'est pas modifié) ────
 
-type ColKey = "id" | "name" | "owner" | "dueDate" | "keyStatus" | "progress" | "sortOrder";
+type ColKey = "id" | "name" | "owner" | "dueDate" | "keyStatus" | "tag" | "progress" | "sortOrder";
 
 const COLUMNS: { key: ColKey; label: string; title?: string }[] = [
   { key: "id", label: "Matricule" },
@@ -23,6 +23,7 @@ const COLUMNS: { key: ColKey; label: string; title?: string }[] = [
   { key: "owner", label: "Responsable" },
   { key: "dueDate", label: "Échéance" },
   { key: "keyStatus", label: "Statut" },
+  { key: "tag", label: "Catégorie" },
   { key: "progress", label: "Avancement" },
   { key: "sortOrder", label: "Priorité #", title: "Ordre d'affichage (1 = prioritaire, 99 = non classé)" },
 ];
@@ -52,6 +53,7 @@ const emptyRow = (): Row => ({
   owner: "",
   dueDate: "",
   keyStatus: "on_track",
+  tag: "",
   progress: 0,
   sortOrder: 99,
 });
@@ -62,6 +64,7 @@ export function AdminProjects() {
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
   const [sort, setSort] = useState<{ key: ColKey; dir: "asc" | "desc" } | null>(null);
+  const [tags, setTags] = useState<string[]>([]);
 
   // Clic sur un en-tête : croissant, puis décroissant, puis retour à l'ordre d'origine.
   const toggleSort = (key: ColKey) =>
@@ -72,7 +75,7 @@ export function AdminProjects() {
   useEffect(() => {
     fetch("/api/projects")
       .then((r) => r.json())
-      .then((d) => setRows(d.projects ?? []))
+      .then((d) => { setRows(d.projects ?? []); setTags(d.tags ?? []); })
       .catch(() => setMsg({ kind: "err", text: "Impossible de charger les projets." }))
       .finally(() => setLoading(false));
   }, []);
@@ -100,6 +103,7 @@ export function AdminProjects() {
             owner: p.owner,
             dueDate: p.dueDate,
             keyStatus: p.keyStatus,
+            tag: p.tag ?? "",
             progress: p.progress,
             sortOrder: p.sortOrder ?? 99,
           })),
@@ -232,6 +236,20 @@ export function AdminProjects() {
                       {KEY_STATUS.map((s) => (
                         <option key={s} value={s}>
                           {KEY_LABEL[s]}
+                        </option>
+                      ))}
+                    </select>
+                  </td>
+                  <td className="py-1 pr-2">
+                    <select
+                      className="bg-bg-base neon-border rounded px-2 py-1"
+                      value={r.tag ?? ""}
+                      onChange={(e) => update(i, { tag: e.target.value })}
+                    >
+                      <option value="">— aucune —</option>
+                      {tags.map((t) => (
+                        <option key={t} value={t}>
+                          {t}
                         </option>
                       ))}
                     </select>
