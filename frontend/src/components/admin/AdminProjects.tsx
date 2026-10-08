@@ -13,6 +13,39 @@ const KEY_LABEL: Record<KeyStatus, string> = {
   done: "Terminé",
 };
 
+// ── Tri du tableau (affichage seul : l'ordre enregistré n'est pas modifié) ────
+
+type ColKey = "id" | "name" | "owner" | "dueDate" | "keyStatus" | "progress" | "sortOrder";
+
+const COLUMNS: { key: ColKey; label: string; title?: string }[] = [
+  { key: "id", label: "Matricule" },
+  { key: "name", label: "Intitulé" },
+  { key: "owner", label: "Responsable" },
+  { key: "dueDate", label: "Échéance" },
+  { key: "keyStatus", label: "Statut" },
+  { key: "progress", label: "Avancement" },
+  { key: "sortOrder", label: "Priorité #", title: "Ordre d'affichage (1 = prioritaire, 99 = non classé)" },
+];
+
+// Le statut se trie par gravité (comme le tri du dashboard), pas par alphabet.
+const STATUS_RANK: Record<KeyStatus, number> = {
+  critical: 0, at_risk: 1, on_track: 2, paused: 3, done: 4,
+};
+
+/** 1 pour une valeur vide : ces lignes restent en bas quel que soit le sens. */
+function emptyRank(r: Row, key: ColKey): number {
+  if (key === "progress" || key === "sortOrder" || key === "keyStatus") return 0;
+  return String(r[key] ?? "").trim() ? 0 : 1;
+}
+
+function compare(a: Row, b: Row, key: ColKey): number {
+  if (key === "progress" || key === "sortOrder") return a[key] - b[key];
+  if (key === "keyStatus") return STATUS_RANK[a.keyStatus] - STATUS_RANK[b.keyStatus];
+  if (key === "dueDate") return (a.dueDate ?? "").localeCompare(b.dueDate ?? ""); // ISO : ordre lexical = chronologique
+  // numeric: SI-PRO3 avant SI-PRO11
+  return a[key].localeCompare(b[key], "fr", { sensitivity: "base", numeric: true });
+}
+
 const emptyRow = (): Row => ({
   id: "",
   name: "",
@@ -28,6 +61,13 @@ export function AdminProjects() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
+  const [sort, setSort] = useState<{ key: ColKey; dir: "asc" | "desc" } | null>(null);
+
+  // Clic sur un en-tête : croissant, puis décroissant, puis retour à l'ordre d'origine.
+  const toggleSort = (key: ColKey) =>
+    setSort((s) =>
+      s?.key !== key ? { key, dir: "asc" } : s.dir === "asc" ? { key, dir: "desc" } : null,
+    );
 
   useEffect(() => {
     fetch("/api/projects")
@@ -76,6 +116,19 @@ export function AdminProjects() {
     }
   };
 
+  // Vue triée qui conserve l'index d'origine : l'édition et la suppression
+  // continuent de viser la bonne ligne, et l'ordre enregistré reste inchangé.
+  const view = rows.map((r, i) => ({ r, i }));
+  if (sort) {
+    const dir = sort.dir === "asc" ? 1 : -1;
+    view.sort(
+      (A, B) =>
+        emptyRank(A.r, sort.key) - emptyRank(B.r, sort.key) ||
+        compare(A.r, B.r, sort.key) * dir ||
+        A.i - B.i,
+    );
+  }
+
   return (
     <div className="h-full w-full p-6 overflow-auto">
       {/* Bandeau collant : « Enregistrer » reste accessible même en bas de liste. */}
@@ -116,18 +169,30 @@ export function AdminProjects() {
           <table className="w-full text-sm border-collapse">
             <thead className="text-text-muted text-left text-xs">
               <tr>
-                <th className="py-2 pr-2">Matricule</th>
-                <th className="py-2 pr-2">Intitulé</th>
-                <th className="py-2 pr-2">Responsable</th>
-                <th className="py-2 pr-2">Échéance</th>
-                <th className="py-2 pr-2">Statut</th>
-                <th className="py-2 pr-2">Avancement</th>
-                <th className="py-2 pr-2" title="Ordre d'affichage (1 = prioritaire, 99 = non classé)">Priorité #</th>
+                {COLUMNS.map((c) => {
+                  const active = sort?.key === c.key;
+                  return (
+                    <th key={c.key} className="py-2 pr-2 font-normal">
+                      <button
+                        type="button"
+                        onClick={() => toggleSort(c.key)}
+                        className="flex items-center gap-1 hover:text-white transition-colors"
+                        style={{ color: active ? "var(--neon-cyan)" : undefined }}
+                        title={c.title ?? `Trier par ${c.label.toLowerCase()}`}
+                      >
+                        {c.label}
+                        <span className="text-[9px]" style={{ opacity: active ? 1 : 0.3 }}>
+                          {active ? (sort.dir === "asc" ? "▲" : "▼") : "↕"}
+                        </span>
+                      </button>
+                    </th>
+                  );
+                })}
                 <th className="py-2"></th>
               </tr>
             </thead>
             <tbody>
-              {rows.map((r, i) => (
+              {view.map(({ r, i }) => (
                 <tr key={i} className="border-t border-white/10">
                   <td className="py-1 pr-2">
                     <input
@@ -218,6 +283,11 @@ export function AdminProjects() {
             </button>
           </div>
           <p className="text-text-muted text-[11px] mt-3">
+            Un clic sur un en-tête trie l'affichage (croissant, décroissant, puis ordre
+            d'origine) ; cela ne change pas l'ordre enregistré ni l'affichage mural, piloté
+            par <em>Priorité #</em>.
+          </p>
+          <p className="text-text-muted text-[11px] mt-1">
             « Enregistrer » remplace la liste complète, réécrit
             <code className="mx-1">backend/data/projects.json</code> et diffuse la mise à
             jour à l'écran. <code>overdue</code> est calculé automatiquement.
