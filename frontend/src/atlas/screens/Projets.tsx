@@ -84,15 +84,20 @@ function Row({ project: p, idx = 0 }: { project: Project; idx?: number }) {
         <div style={{ width: 7, height: 7, borderRadius: "50%", flexShrink: 0, background: dot, boxShadow: recettage ? `0 0 8px ${dot}` : undefined }} />
         <div style={{ minWidth: 0 }}>
           <div style={{ fontSize: 15, fontWeight: 600, lineHeight: 1.2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.name}</div>
-          <div style={{ display: "flex", alignItems: "center", gap: 7, minWidth: 0 }}>
+          {/* Hauteur figée : les lignes restent régulières même sans catégorie
+              ni échéance. Le responsable n'est pas affiché (identique partout,
+              il noyait l'information utile). */}
+          <div style={{ display: "flex", alignItems: "center", gap: 7, minWidth: 0, height: 16 }}>
             {p.tag && (
               <span style={{ fontFamily: MONO, fontSize: 8.5, letterSpacing: ".06em", textTransform: "uppercase", color: tagColor(p.tag), border: `1px solid ${tagColor(p.tag)}44`, borderRadius: 4, padding: "1px 5px", flexShrink: 0, lineHeight: 1.4 }}>
                 {p.tag}
               </span>
             )}
-            <span style={{ fontFamily: MONO, fontSize: 9.5, lineHeight: 1.3, letterSpacing: ".08em", color: C.muted40, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-              {p.owner} · {O(echeance(p.dueDate)).toUpperCase()}
-            </span>
+            {p.dueDate && (
+              <span style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: ".08em", color: C.muted40, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                {O(echeance(p.dueDate)).toUpperCase()}
+              </span>
+            )}
           </div>
         </div>
       </div>
