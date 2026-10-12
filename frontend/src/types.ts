@@ -1,6 +1,6 @@
 // Contrats partagés front/back — miroir de docs/MODELES_DONNEES.md
 
-export type PanelId = "tickets" | "projects" | "services" | "footer";
+export type PanelId = "tickets" | "projects" | "services" | "roadmap" | "footer";
 
 export interface PanelMeta {
   updatedAt: string;
@@ -30,6 +30,33 @@ export interface TicketsPanel extends PanelMeta {
   tickets: Ticket[];
   statusCounts: Partial<Record<TicketStatus, number>>;
   total: number;
+}
+
+// ── Feuille de route (P4) — source : backend/data/roadmap.json ───────────────
+
+export interface RoadmapBar {
+  start: string;
+  end: string;
+  label: string;
+  detail?: string;
+  tone?: "solid" | "light" | "muted" | "outline";
+  row?: number;
+}
+
+export interface RoadmapPanel extends PanelMeta {
+  title: string;
+  subtitle?: string;
+  note?: string;
+  source?: string;
+  start: string;
+  end: string;
+  goLive?: { date: string; label: string };
+  periods?: { label: string; start: string; end: string }[];
+  milestones?: { id: string; date: string; label: string }[];
+  codir?: { date: string; label: string; kind?: "codir" | "si"; done?: boolean; strong?: boolean }[];
+  meetings?: { date: string; label: string; detail?: string; status?: "booked" | "todo" }[];
+  unscheduled?: { label: string; detail?: string }[];
+  construction?: { owners?: string; bars: RoadmapBar[] };
 }
 
 export type KeyStatus = "on_track" | "at_risk" | "critical" | "done" | "paused";
@@ -106,6 +133,7 @@ export interface DashboardState {
   tickets: TicketsPanel;
   projects: ProjectsPanel;
   services: ServicesPanel;
+  roadmap: RoadmapPanel;
   footer: FooterPanel;
 }
 

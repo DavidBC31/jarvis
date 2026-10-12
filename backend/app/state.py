@@ -13,6 +13,7 @@ from datetime import datetime, timezone
 from .connectors import projects as projects_conn
 from .connectors import monitoring as monitoring_conn
 from .connectors import everping as everping_conn
+from .connectors import roadmap as roadmap_conn
 
 try:  # métriques système réelles si psutil est disponible
     import psutil
@@ -80,6 +81,11 @@ def seed_services() -> dict:
     return monitoring_conn.seed_panel()
 
 
+def seed_roadmap() -> dict:
+    # Panneau Feuille de route (P4) : fichier éditable rechargé à chaud.
+    return roadmap_conn.seed_panel()
+
+
 def seed_footer() -> dict:
     healthy = True  # dérivé de l'état agrégé du panneau 3 (cf. recompute_footer_health)
     return {
@@ -109,6 +115,7 @@ def initial_state() -> dict:
         "tickets": seed_tickets(),
         "projects": seed_projects(),
         "services": seed_services(),
+        "roadmap": seed_roadmap(),
         "footer": seed_footer(),
     }
 

@@ -25,6 +25,7 @@ from . import state as state_module
 from .connectors import projects as projects_conn
 from .connectors import monitoring as monitoring_conn
 from .connectors import everping as everping_conn
+from .connectors import roadmap as roadmap_conn
 from .connectors.projects import ProjectsPayload
 from .rag import service as rag_service
 from .rag import store as rag_store
@@ -91,6 +92,23 @@ async def _projects_watcher() -> None:
         await refresh_projects()
 
 
+async def refresh_roadmap(force: bool = False) -> dict | None:
+    """Recharge la feuille de route si le fichier a changé (ou si `force`)."""
+    if roadmap_conn.poll_changed() or force:
+        panel = roadmap_conn.build_panel()
+        state_module.STATE["roadmap"] = panel
+        await hub.broadcast({"type": "panel.update", "panel": "roadmap", "data": panel})
+        return panel
+    return None
+
+
+async def _roadmap_watcher() -> None:
+    roadmap_conn.poll_changed()  # synchronise le mtime initial (déjà chargé au boot)
+    while True:
+        await asyncio.sleep(PROJECTS_WATCH_INTERVAL_S)
+        await refresh_roadmap()
+
+
 async def _everping_watcher() -> None:
     """Rafraîchit périodiquement les tickets Everping (si credentials)."""
     while True:
@@ -126,6 +144,7 @@ async def lifespan(_: FastAPI):
         asyncio.create_task(_broadcaster()),
         asyncio.create_task(_projects_watcher()),
         asyncio.create_task(_monitoring_watcher()),
+        asyncio.create_task(_roadmap_watcher()),
         asyncio.create_task(_everping_watcher()),
     ]
     try:
@@ -166,6 +185,10 @@ async def health() -> JSONResponse:
                     "history": projects_conn.history_info(),
                 },
                 "monitoring": monitoring_conn.mode(),
+                "roadmap": {
+                    "stale": state_module.STATE["roadmap"].get("stale", False),
+                    "sourceError": state_module.STATE["roadmap"].get("sourceError"),
+                },
                 "rag": {"mode": rag_llm.mode(), "chunks": rag_store.chunk_count()},
             },
         }

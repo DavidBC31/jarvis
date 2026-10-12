@@ -1,0 +1,69 @@
+{
+  "title": "Refonte de l'outil métier",
+  "subtitle": "Bloc 1 Prospector · tous les rendez-vous",
+  "note": "Bloc 2 Billetron : cadrage lancé au Codir du 25/01 (atelier le 26/01), ses dates sont fixées à ce moment-là.",
+  "source": "Cahier des charges V2, § 1.6 · agendas Google · état au 12/10/2026",
+  "start": "2026-10-05",
+  "end": "2027-01-31",
+  "goLive": { "date": "2027-01-12", "label": "Mise en service de Prospector" },
+
+  "periods": [
+    { "label": "Toussaint", "start": "2026-10-24", "end": "2026-11-02" },
+    { "label": "Trêve", "start": "2026-12-21", "end": "2027-01-04" }
+  ],
+
+  "milestones": [
+    { "id": "J1", "date": "2026-10-09", "label": "CDC V2" },
+    { "id": "J2", "date": "2026-10-23", "label": "CDC fonctionnel Prospector" },
+    { "id": "J3", "date": "2026-11-06", "label": "Socle commun v1" },
+    { "id": "J4", "date": "2026-11-27", "label": "Prospector alpha" },
+    { "id": "J5", "date": "2026-12-14", "label": "Go / No-Go au Codir" },
+    { "id": "J6", "date": "2027-01-12", "label": "Prospector en service" }
+  ],
+
+  "codir": [
+    { "date": "2026-10-07", "label": "CDC V2 (fait)", "kind": "si", "done": true },
+    { "date": "2026-10-19", "label": "Retours des ateliers", "kind": "codir" },
+    { "date": "2026-10-28", "label": "Validation du CDC fonctionnel", "kind": "si" },
+    { "date": "2026-11-02", "label": "Périmètre gelé, outils secondaires", "kind": "codir" },
+    { "date": "2026-11-04", "label": "Démo du socle", "kind": "si" },
+    { "date": "2026-11-16", "label": "Démo des premiers écrans", "kind": "codir" },
+    { "date": "2026-11-30", "label": "Point IT", "kind": "codir" },
+    { "date": "2026-12-14", "label": "Go / No-Go", "kind": "codir", "strong": true },
+    { "date": "2027-01-11", "label": "Feu vert final", "kind": "codir" },
+    { "date": "2027-01-20", "label": "Retours à chaud, bascule", "kind": "si" },
+    { "date": "2027-01-25", "label": "Bilan, cadrage Billetron", "kind": "codir" }
+  ],
+
+  "meetings": [
+    { "date": "2026-10-20", "label": "Bookers, workshop 2", "detail": "10h-11h30 · Sam et Greg", "status": "todo" },
+    { "date": "2026-10-21", "label": "Régie 10h15 · Admin 11h", "status": "booked" },
+    { "date": "2026-10-22", "label": "Promo locale 10h · Plan promo 14h", "detail": "Naming à poser", "status": "booked" },
+    { "date": "2026-10-29", "label": "Compta", "detail": "10h", "status": "booked" },
+    { "date": "2026-11-17", "label": "Bookers, atelier 3", "detail": "10h · validation des premiers écrans", "status": "todo" },
+    { "date": "2026-12-01", "label": "Recette 1", "detail": "10h", "status": "todo" },
+    { "date": "2026-12-08", "label": "Recette 2", "detail": "10h", "status": "todo" },
+    { "date": "2026-12-11", "label": "Contrôle de la reprise avec JB", "status": "todo" },
+    { "date": "2027-01-05", "label": "Formation bookers", "detail": "10h", "status": "todo" },
+    { "date": "2027-01-07", "label": "Formations admin, promo, régie", "detail": "10h", "status": "todo" },
+    { "date": "2027-01-26", "label": "Cadrage Billetron (bloc 2)", "detail": "15h · Sandra invitée", "status": "booked" }
+  ],
+
+  "unscheduled": [
+    { "label": "Atelier chargés de prod et com (bloc 2)", "detail": "date à fixer" },
+    { "label": "Naming", "detail": "à poser" }
+  ],
+
+  "construction": {
+    "owners": "Alexandre, David",
+    "bars": [
+      { "start": "2026-10-05", "end": "2026-11-06", "label": "Socle commun : la base de données", "detail": "v1 le 6/11", "tone": "light", "row": 0 },
+      { "start": "2026-11-09", "end": "2026-11-20", "label": "Lot 1 · le quotidien du booker", "tone": "solid", "row": 0 },
+      { "start": "2026-11-16", "end": "2026-11-27", "label": "Lot 2 · le confirmé", "tone": "solid", "row": 1 },
+      { "start": "2026-12-01", "end": "2026-12-18", "label": "Lot 3 · liaisons avec les pôles", "tone": "solid", "row": 0 },
+      { "start": "2026-12-07", "end": "2026-12-18", "label": "Reprise des données, puis corrections et guide", "tone": "light", "row": 1 },
+      { "start": "2026-12-21", "end": "2027-01-04", "label": "Trêve", "tone": "muted", "row": 0 },
+      { "start": "2027-01-05", "end": "2027-01-31", "label": "Double-run avec FileMaker", "tone": "outline", "row": 0 }
+    ]
+  }
+}

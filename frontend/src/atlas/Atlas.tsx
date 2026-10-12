@@ -4,10 +4,12 @@ import { C, O, MONO, clockStr, dateStr, pad } from "./util";
 import { Projets } from "./screens/Projets";
 import { Systemes } from "./screens/Systemes";
 import { Vocal } from "./screens/Vocal";
+import { Roadmap } from "./screens/Roadmap";
 
-type Screen = "projets" | "systemes" | "vocal";
+type Screen = "projets" | "refonte" | "systemes" | "vocal";
 const NAV: { id: Screen; label: string }[] = [
   { id: "projets", label: "PROJETS" },
+  { id: "refonte", label: "REFONTE OUTIL MÉTIER" },
   { id: "systemes", label: "SYSTÈMES" },
   { id: "vocal", label: "VOCAL" },
 ];
@@ -15,9 +17,10 @@ const NAV: { id: Screen; label: string }[] = [
 // Rotation automatique (affichage permanent en open space) : après 1 min sans
 // activité, Projets et Systèmes s'enchaînent, chacun avec sa durée d'affichage.
 const IDLE_MS = 60_000;
-// Projets est l'écran de référence : il reste affiché 1,5 fois plus longtemps.
-const DWELL_MS: Partial<Record<Screen, number>> = { projets: 90_000, systemes: 30_000 };
-const NEXT: Partial<Record<Screen, Screen>> = { projets: "systemes", systemes: "projets" };
+// Durées d'affichage en rotation. Projets reste l'écran de référence ; la
+// refonte de l'outil métier, beaucoup plus dense, a besoin de 2 minutes.
+const DWELL_MS: Partial<Record<Screen, number>> = { projets: 90_000, refonte: 120_000, systemes: 30_000 };
+const NEXT: Partial<Record<Screen, Screen>> = { projets: "refonte", refonte: "systemes", systemes: "projets" };
 
 /** Horodatage de la dernière interaction (souris, clavier, tactile). */
 function useLastActivity() {
@@ -205,6 +208,7 @@ export function Atlas() {
 
         {/* ── Écran actif ── */}
         {screen === "projets" && <Projets />}
+        {screen === "refonte" && <Roadmap />}
         {screen === "systemes" && <Systemes onIncident={triggerIncident} />}
         {screen === "vocal" && <Vocal />}
 
