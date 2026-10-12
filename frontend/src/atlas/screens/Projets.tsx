@@ -49,8 +49,8 @@ function Trend({ change }: { change: NonNullable<Project["change"]> }) {
   const quand = isNaN(d.getTime()) ? "" : ` · le ${d.toLocaleDateString("fr-FR")}`;
   return (
     <span title={`${change.from} % → ${change.to} %${quand}`}
-      style={{ fontFamily: MONO, fontSize: 11, fontWeight: 700, color, background: up ? "rgba(52,199,89,.12)" : "rgba(255,149,0,.12)", border: `1px solid ${up ? "rgba(52,199,89,.3)" : "rgba(255,149,0,.3)"}`, borderRadius: 9999, padding: "2px 7px", whiteSpace: "nowrap", justifySelf: "end" }}>
-      {up ? "▲" : "▼"} {O(Math.abs(change.delta))}
+      style={{ fontFamily: MONO, fontSize: 10.5, fontWeight: 700, color, background: up ? "rgba(52,199,89,.12)" : "rgba(255,149,0,.12)", border: `1px solid ${up ? "rgba(52,199,89,.3)" : "rgba(255,149,0,.3)"}`, borderRadius: 9999, padding: "2px 6px", whiteSpace: "nowrap", flexShrink: 0 }}>
+      {up ? "▲" : "▼"} {O(Math.abs(change.delta))} %
     </span>
   );
 }
@@ -68,7 +68,7 @@ function Row({ project: p, idx = 0 }: { project: Project; idx?: number }) {
     <div
       className={recettage ? "recette-wave" : undefined}
       style={{
-        display: "grid", gridTemplateColumns: "minmax(0,1.5fr) 92px 1fr 54px 56px",
+        display: "grid", gridTemplateColumns: "minmax(0,1.5fr) 92px 1fr 128px",
         alignItems: "center", gap: 14, borderRadius: 12, padding: "7px 18px", flexShrink: 0,
         backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)",
         backgroundColor: idle, border: `1px solid ${border}`,
@@ -107,9 +107,13 @@ function Row({ project: p, idx = 0 }: { project: Project; idx?: number }) {
       <div style={{ height: 5, borderRadius: 3, background: "rgba(238,240,242,.08)", overflow: "hidden" }}>
         <div style={{ height: "100%", borderRadius: 3, background: "linear-gradient(90deg,#1450E2,#5ac8fa)", animation: "barGrow 1s ease-out", width: `${p.progress}%` }} />
       </div>
-      {p.change && p.change.delta !== 0 ? <Trend change={p.change} /> : <span />}
-      <div style={{ fontFamily: MONO, fontSize: 16, fontWeight: 700, textAlign: "right" }}>
-        {O(p.progress)}<span style={{ fontSize: 10, color: C.muted40 }}> %</span>
+      {/* Évolution et taux dans la même cellule : on lit « +20 % » juste à
+          côté du « 60 % » auquel il se rapporte. */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 7 }}>
+        {p.change && p.change.delta !== 0 && <Trend change={p.change} />}
+        <span style={{ fontFamily: MONO, fontSize: 16, fontWeight: 700, whiteSpace: "nowrap" }}>
+          {O(p.progress)}<span style={{ fontSize: 10, color: C.muted40 }}> %</span>
+        </span>
       </div>
     </div>
   );
@@ -157,6 +161,11 @@ export function Projets() {
           <h1 style={{ margin: 0, fontSize: 42, lineHeight: 1, fontWeight: 700, letterSpacing: "-.03em" }}>Projets IT</h1>
           <div style={{ fontFamily: MONO, fontSize: 12, letterSpacing: ".14em", color: C.muted5, marginTop: 10 }}>
             S{O(isoWeek(now))} — {O(now.getFullYear())} · {O(String(finis.length).padStart(2, "0"))} TERMINÉS / RECETTAGE
+            {panel?.stale && (
+              <span style={{ color: C.warnText, marginLeft: 14 }}>
+                ▲ DONNÉES FIGÉES — PROJECTS.JSON INVALIDE
+              </span>
+            )}
           </div>
         </div>
         <div style={{ display: "flex", gap: 14 }}>

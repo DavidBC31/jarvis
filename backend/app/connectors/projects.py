@@ -12,6 +12,7 @@ Le connecteur valide, normalise (calcule ``overdue``, trie par priorité puis
 from __future__ import annotations
 
 import json
+import logging
 from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Literal
@@ -34,6 +35,8 @@ RECENT_CHANGES = 5    # projets mis en avant à l'écran (les plus récemment mo
 
 # Ordre de priorité pour le tri (le plus urgent en tête).
 _PRIORITY = {"critical": 0, "at_risk": 1, "on_track": 2, "paused": 3, "done": 4}
+
+_log = logging.getLogger(__name__)
 
 _last_mtime: float | None = None
 _last_good: list[dict] | None = None  # dernier jeu de projets normalisé valide
@@ -146,9 +149,24 @@ def _track_progress(projects: list[dict]) -> list[dict]:
         history["changes"] = history["changes"][-HISTORY_MAX:]
     try:
         HISTORY_FILE.write_text(json.dumps(history, ensure_ascii=False, indent=2) + "\n", "utf-8")
-    except OSError:
-        pass  # l'historique est un bonus : on n'empêche jamais l'affichage
+    except OSError as e:
+        # L'historique est un bonus : on n'empêche jamais l'affichage. Mais on
+        # trace, sinon les flèches disparaissent sans que rien ne l'explique.
+        _log.warning("historique d'avancement non écrit (%s) : %s", HISTORY_FILE, e)
     return history["changes"]
+
+
+def history_info() -> dict:
+    """État de l'historique, pour /api/health (diagnostic des flèches)."""
+    h = _load_history()
+    if h is None:
+        return {"events": 0, "lastAt": None, "file": "absent ou illisible"}
+    changes = h.get("changes", [])
+    return {
+        "events": len(changes),
+        "lastAt": changes[-1]["at"] if changes else None,
+        "tracked": len(h.get("snapshot", {})),
+    }
 
 
 def _attach_recent_changes(projects: list[dict], changes: list[dict]) -> None:
@@ -177,6 +195,9 @@ def build_panel() -> dict:
         _last_good = projects
         return {"updatedAt": _now_iso(), "stale": False, "projects": projects}
     except ValueError as e:
+        # Panneau figé sur le dernier état valide : sans trace, les flèches et
+        # les avancements semblent « bloqués » sans raison visible.
+        _log.error("projects.json invalide, panneau figé : %s", e)
         return {
             "updatedAt": _now_iso(),
             "stale": True,

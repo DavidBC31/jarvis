@@ -159,7 +159,12 @@ async def health() -> JSONResponse:
             "serverTime": state_module.STATE["serverTime"],
             "connectors": {
                 "everping": everping_conn.mode(),
-                "projects": "manual_file",
+                "projects": {
+                    "mode": "manual_file",
+                    "stale": state_module.STATE["projects"].get("stale", False),
+                    "sourceError": state_module.STATE["projects"].get("sourceError"),
+                    "history": projects_conn.history_info(),
+                },
                 "monitoring": monitoring_conn.mode(),
                 "rag": {"mode": rag_llm.mode(), "chunks": rag_store.chunk_count()},
             },
