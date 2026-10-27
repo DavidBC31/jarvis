@@ -79,6 +79,34 @@ Le Mac Studio fait tourner Jarvis en permanence ; **Cloudflare Tunnel** lui donn
 
 > Pour un test rapide sans compte/hostname : `cloudflared tunnel --url http://localhost:8000` fournit une URL `*.trycloudflare.com` éphémère (l'app doit déjà tourner via `docker compose up`).
 
+### Redémarrage automatique du Mac Studio
+
+Les conteneurs ont `restart: unless-stopped` : ils repartent seuls **à condition que le moteur Docker tourne**. Or sur macOS, Docker Desktop est une application graphique : elle ne démarre pas au *boot*, mais à l'**ouverture de session**. Après une coupure de courant ou une mise à jour, le Mac redémarre, personne n'ouvre de session, Docker reste éteint et le site répond **502**.
+
+Trois réglages sont nécessaires, les trois ensemble :
+
+1. **Docker Desktop au login** — Docker Desktop → ⚙️ *Settings* → *General* → cocher **« Start Docker Desktop when you sign in »**.
+2. **Ouverture de session automatique** — *Réglages Système* → *Utilisateurs et groupes* → *Ouverture de session automatique* → choisir le compte `serveurit`. Sans ça, le Mac reste bloqué sur l'écran de connexion et le point 1 ne sert à rien.
+3. **FileVault désactivé** — *Réglages Système* → *Confidentialité et sécurité* → *FileVault*. Tant que FileVault est actif, macOS **interdit** l'ouverture de session automatique : le disque doit être déverrouillé à la main à chaque démarrage. C'est un arbitrage : sur une machine qui doit redémarrer sans personne devant, FileVault et le redémarrage autonome sont incompatibles.
+
+Le tunnel `cloudflared` tourne en natif (hors Docker). Installé en service, il démarre dès le *boot*, avant même la session :
+
+```bash
+sudo cloudflared service install      # si ce n'est pas déjà fait
+sudo launchctl list | grep cloudflared   # doit renvoyer une ligne
+```
+
+**Vérifier que tout repart** sans attendre la prochaine coupure :
+
+```bash
+sudo reboot
+# puis, une minute après le redémarrage, depuis le Mac :
+docker ps --format 'table {{.Names}}\t{{.Status}}'
+curl -s -o /dev/null -w 'HTTP %{http_code}\n' http://127.0.0.1:8000/api/health
+```
+
+Le conteneur `jarvis-jarvis-1` doit être `Up`, et le `curl` renvoyer `200`.
+
 ### Option 2 — Script natif
 
 **En une commande** (build le frontend si Node est présent, puis démarre l'agrégateur) :
