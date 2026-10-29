@@ -1,5 +1,5 @@
 import { useDashboard } from "../../store";
-import { C, O, glass, MONO } from "../util";
+import { C, O, MONO } from "../util";
 import type { RoadmapPanel, RoadmapBar } from "../../types";
 
 // ── Repères temporels ─────────────────────────────────────────────────────────
@@ -71,10 +71,18 @@ export function Roadmap() {
   const todayX = clamp(((now.getTime() - s) / span) * 100);
   const todayVisible = now.getTime() >= s && now.getTime() <= s + span;
 
-  const next = [...(panel.milestones ?? [])]
-    .filter((m) => d(m.date).getTime() >= today)
-    .sort((a, b) => a.date.localeCompare(b.date))[0];
-  const joursRestants = next ? Math.round((d(next.date).getTime() - today) / 86400000) : null;
+  const joursAvant = (iso: string) => Math.round((d(iso).getTime() - today) / 86400000);
+
+  // Échéances mises en avant (alpha, mise en service) : compte à rebours en tête
+  // d'écran. À défaut, on retombe sur le prochain jalon daté.
+  const marques = (panel.milestones ?? []).filter((m) => m.highlight);
+  const focus = (marques.length
+    ? marques
+    : [...(panel.milestones ?? [])]
+        .filter((m) => d(m.date).getTime() >= today)
+        .sort((a, b) => a.date.localeCompare(b.date))
+        .slice(0, 1)
+  ).map((m, i) => ({ ...m, accent: i === 0 ? C.teal : VIOLET }));
 
   // `height` sert de hauteur minimale ET de poids : l'espace restant se répartit
   // au prorata du contenu, pour que la frise occupe toute la hauteur de l'écran.
@@ -94,6 +102,8 @@ export function Roadmap() {
 
   const CODIR_H = 26 + (Math.max(0, ...codirRows) + 1) * 30;
   const MEET_H = 26 + (Math.max(0, ...meetRows) + 1) * 36;
+  const bars = panel.construction?.bars ?? [];
+  const CONSTR_H = 18 + (Math.max(0, ...bars.map((b) => b.row ?? 0)) + 1) * 31;
 
   return (
     <div style={{ position: "relative", zIndex: 4, padding: "20px 48px 0", animation: "riseIn .45s ease-out", height: "calc(100% - 96px - 42px)", display: "flex", flexDirection: "column" }}>
@@ -107,20 +117,36 @@ export function Roadmap() {
             {panel.stale && <span style={{ color: C.warnText, marginLeft: 14 }}>▲ DONNÉES FIGÉES</span>}
           </div>
         </div>
-        {next && (
-          <div style={{ ...glass(0.04, 0.08), borderRadius: 14, padding: "9px 20px", textAlign: "right", flexShrink: 0 }}>
-            <div style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: ".16em", color: C.muted45, textTransform: "uppercase", marginBottom: 3 }}>
-              Prochain jalon · {next.id}
-            </div>
-            <div style={{ fontFamily: MONO, fontSize: 21, fontWeight: 700, lineHeight: 1.1, color: C.teal }}>
-              {O(jour(next.date))}
-              <span style={{ fontSize: 12.5, color: C.muted45 }}>
-                {joursRestants === 0 ? "  aujourd'hui" : `  J−${O(joursRestants ?? 0)}`}
-              </span>
-            </div>
-            <div style={{ fontSize: 12, color: "rgba(238,240,242,.8)", marginTop: 2 }}>{next.label}</div>
-          </div>
-        )}
+        <div style={{ display: "flex", gap: 14, flexShrink: 0 }}>
+          {focus.map((m) => {
+            const j = joursAvant(m.date);
+            const passe = j < 0;
+            const col = passe ? "rgba(238,240,242,.45)" : m.accent;
+            return (
+              <div key={m.id} style={{
+                background: passe ? "rgba(238,240,242,.04)" : `${col}14`,
+                border: `1px solid ${passe ? "rgba(238,240,242,.1)" : `${col}55`}`,
+                boxShadow: passe ? "none" : `0 0 22px ${col}22`,
+                borderRadius: 14, padding: "8px 22px 10px", minWidth: 188,
+              }}>
+                <div style={{ fontFamily: MONO, fontSize: 9.5, letterSpacing: ".18em", color: col, textTransform: "uppercase" }}>
+                  {m.short ?? m.label} · {m.id}
+                </div>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 9, marginTop: 1 }}>
+                  <span style={{ fontFamily: MONO, fontSize: 40, fontWeight: 700, lineHeight: 1, color: col }}>
+                    {passe ? "✓" : j === 0 ? "J" : `J−${O(j)}`}
+                  </span>
+                  <span style={{ fontFamily: MONO, fontSize: 12.5, color: C.muted5 }}>
+                    {passe ? "fait" : j === 0 ? "aujourd'hui" : `${O(j)} jours`}
+                  </span>
+                </div>
+                <div style={{ fontFamily: MONO, fontSize: 11, color: "rgba(238,240,242,.75)", letterSpacing: ".06em", marginTop: 2 }}>
+                  {O(jour(m.date))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       {/* Frise */}
@@ -148,20 +174,28 @@ export function Roadmap() {
           <div style={{ position: "absolute", left: 0, right: 0, top: "50%", height: 1, background: "rgba(90,200,250,.3)" }} />
           {(panel.milestones ?? []).map((m, i) => {
             const passe = d(m.date).getTime() < today;
-            const col = passe ? "rgba(238,240,242,.45)" : C.teal;
+            const vedette = !!m.highlight;
+            const col = passe ? "rgba(238,240,242,.45)" : vedette ? C.teal : "rgba(238,240,242,.85)";
             const px = clamp(x(m.date));
             const haut = i % 2 === 0;
+            const taille = vedette ? 19 : 13;
             // Tout est ancré sur l'axe central : la piste peut grandir sans que
             // les étiquettes s'éloignent de leur losange.
-            const place = haut ? { bottom: "50%", marginBottom: 13 } : { top: "50%", marginTop: 13 };
+            const place = haut ? { bottom: "50%", marginBottom: vedette ? 16 : 13 } : { top: "50%", marginTop: vedette ? 16 : 13 };
             return (
               <div key={m.id}>
-                <div style={{ position: "absolute", left: `${px}%`, top: "50%", width: 13, height: 13, marginLeft: -6.5, marginTop: -6.5, background: col, transform: "rotate(45deg)", boxShadow: passe ? "none" : `0 0 10px ${col}` }} />
-                <div style={{ position: "absolute", left: `${anchor(px, 11)}%`, width: 180, marginLeft: -90, textAlign: "center", ...place }}>
-                  <div style={{ fontFamily: MONO, fontSize: 11.5, fontWeight: 700, color: col, letterSpacing: ".06em" }}>
+                <div style={{
+                  position: "absolute", left: `${px}%`, top: "50%", width: taille, height: taille,
+                  marginLeft: -taille / 2, marginTop: -taille / 2, transform: "rotate(45deg)",
+                  background: m.open ? "transparent" : col,
+                  border: m.open ? `2px solid ${col}` : vedette ? "2px solid #eaf6ff" : "none",
+                  boxShadow: passe ? "none" : `0 0 ${vedette ? 18 : 10}px ${col}`,
+                }} />
+                <div style={{ position: "absolute", left: `${anchor(px, 11)}%`, width: 190, marginLeft: -95, textAlign: "center", ...place }}>
+                  <div style={{ fontFamily: MONO, fontSize: vedette ? 13 : 11.5, fontWeight: 700, color: col, letterSpacing: ".06em" }}>
                     {m.id} · {O(jour(m.date))}
                   </div>
-                  <div style={{ fontSize: 12.5, color: passe ? C.muted45 : "rgba(238,240,242,.9)", lineHeight: 1.25 }}>{m.label}</div>
+                  <div style={{ fontSize: vedette ? 13.5 : 12.5, fontWeight: vedette ? 600 : 400, color: passe ? C.muted45 : "rgba(238,240,242,.9)", lineHeight: 1.25 }}>{m.label}</div>
                 </div>
               </div>
             );
@@ -208,8 +242,8 @@ export function Roadmap() {
         </Lane>
 
         {/* Construction */}
-        <Lane label={`Construction${panel.construction?.owners ? ` · ${panel.construction.owners}` : ""}`} height={76}>
-          {(panel.construction?.bars ?? []).map((b: RoadmapBar) => {
+        <Lane label={`Construction${panel.construction?.owners ? ` · ${panel.construction.owners}` : ""}`} height={CONSTR_H}>
+          {bars.map((b: RoadmapBar) => {
             const left = clamp(x(b.start));
             const width = Math.max(1.2, clamp(x(b.end)) - left);
             const tone = b.tone ?? "solid";
@@ -218,10 +252,21 @@ export function Roadmap() {
               : tone === "light" ? { background: "rgba(90,200,250,.3)", color: "#eaf6ff", border: "1px solid rgba(90,200,250,.45)" }
               : tone === "muted" ? { background: "rgba(238,240,242,.1)", color: C.muted45, border: "1px solid rgba(238,240,242,.14)" }
               : { background: "transparent", color: C.teal, border: `1px solid ${C.teal}` };
+            // Barre trop courte pour son texte : le libellé passe à côté plutôt
+            // que d'être tronqué (« Repri… »).
+            const etroite = width * 16.5 < b.label.length * 7;
+            const top = 9 + (b.row ?? 0) * 31;
             return (
-              <div key={`${b.label}-${b.start}`} title={`${b.label}${b.detail ? ` — ${b.detail}` : ""}`}
-                style={{ position: "absolute", left: `${left}%`, width: `${width}%`, top: (b.row ?? 0) === 0 ? 10 : 42, height: 26, borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center", padding: "0 8px", overflow: "hidden", ...style }}>
-                <span style={{ fontSize: 11, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{b.label}</span>
+              <div key={`${b.label}-${b.start}`}>
+                <div title={`${b.label}${b.detail ? ` — ${b.detail}` : ""}`}
+                  style={{ position: "absolute", left: `${left}%`, width: `${width}%`, top, height: 26, borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "center", padding: etroite ? 0 : "0 8px", overflow: "hidden", ...style }}>
+                  {!etroite && <span style={{ fontSize: 11, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{b.label}</span>}
+                </div>
+                {etroite && (
+                  <span style={{ position: "absolute", left: `${left + width}%`, marginLeft: 9, top, height: 26, display: "flex", alignItems: "center", fontSize: 11, fontWeight: 600, whiteSpace: "nowrap", color: "rgba(238,240,242,.85)" }}>
+                    {b.label}
+                  </span>
+                )}
               </div>
             );
           })}

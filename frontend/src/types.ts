@@ -52,7 +52,14 @@ export interface RoadmapPanel extends PanelMeta {
   end: string;
   goLive?: { date: string; label: string };
   periods?: { label: string; start: string; end: string }[];
-  milestones?: { id: string; date: string; label: string }[];
+  milestones?: {
+    id: string;
+    date: string;
+    label: string;
+    short?: string;     // libellé court pour le compte à rebours
+    highlight?: string | boolean; // échéance mise en avant (alpha, mise en service)
+    open?: boolean;     // losange évidé : jalon hors périmètre du bloc 1
+  }[];
   codir?: { date: string; label: string; kind?: "codir" | "si"; done?: boolean; strong?: boolean }[];
   meetings?: { date: string; label: string; detail?: string; status?: "booked" | "todo" }[];
   unscheduled?: { label: string; detail?: string }[];
